@@ -1,0 +1,20 @@
+---
+Checks:          '*,
+  -readability-magic-numbers,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cert-err58-cpp,
+  -clang-analyzer-optin.performance.Padding,
+  -altera-struct-pack-align,
+  -altera-unroll-loops,
+  -hicpp-braces-around-statements,
+  -readability-braces-around-statements,
+  -fuchsia-*,
+  -google-*,
+  -zircon-*,
+  -abseil-*,
+  -llvm*'
+WarningsAsErrors: '*'
+HeaderFilterRegex: ''
+FormatStyle:     none
+
+
