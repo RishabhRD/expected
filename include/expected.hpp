@@ -48,7 +48,6 @@ class unexpected {
   constexpr explicit unexpected(std::in_place_t /*unused*/, Args&&... args)
       : val(std::forward<Args>(args)...) {}
 
-  // TODO: check with comments on issue created on cplusplus papers
   template <class U, class... Args>
   requires std::constructible_from < E, std::initializer_list<U>
   &, Args... > constexpr explicit unexpected(std::in_place_t /*unused*/,
