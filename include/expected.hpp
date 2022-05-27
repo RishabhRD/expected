@@ -27,6 +27,7 @@
 #pragma once
 
 #include <concepts>
+#include <exception>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -102,7 +103,37 @@ template <class E>
 class bad_expected_access;
 
 template <>
-class bad_expected_access<void>;
+class bad_expected_access<void> : public std::exception {
+ protected:
+  bad_expected_access() noexcept = default;
+  bad_expected_access(bad_expected_access const&) = default;
+  bad_expected_access(bad_expected_access&&) = default;
+  auto operator=(bad_expected_access const&) -> bad_expected_access& = default;
+  auto operator=(bad_expected_access&&) -> bad_expected_access& = default;
+  ~bad_expected_access() override = default;
+
+ public:
+  auto what() const noexcept -> char const* override {  // NOLINT
+    return "bad expected access";
+  }
+};
+
+template <class E>
+class bad_expected_access : public bad_expected_access<void> {
+ public:
+  explicit bad_expected_access(E e) : val(std::move(e)) {}
+  auto what() const noexcept -> char const* override {  // NOLINT
+    return "bad expected access";
+  }
+
+  auto error() & noexcept -> E& { return val; }
+  auto error() const& noexcept -> E const& { return val; }
+  auto error() && noexcept -> E&& { return std::move(val); }
+  auto error() const&& noexcept -> const E&& { return std::move(val); }
+
+ private:
+  E val;
+};
 
 struct unexpect_t {
   explicit unexpect_t() = default;
