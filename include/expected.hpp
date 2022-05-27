@@ -96,6 +96,9 @@ class unexpected {
 };
 
 template <class E>
+unexpected(E) -> unexpected<E>;
+
+template <class E>
 class bad_expected_access;
 
 template <>
