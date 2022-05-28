@@ -27,7 +27,9 @@
 #pragma once
 
 #include <concepts>
+#include <deque>
 #include <exception>
+#include <memory>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -280,17 +282,17 @@ class expected {
                   std::is_trivially_destructible_v<E>) {
     } else if constexpr (std::is_trivially_destructible_v<T>) {
       if (!has_val) {
-        unex.~E();  // NOLINT
+        std::destroy_at(std::addressof(this->unex));
       }
     } else if constexpr (std::is_trivially_destructible_v<E>) {
       if (has_val) {
-        val.~T();  // NOLINT
+        std::destroy_at(std::addressof(this->val));
       }
     } else {
       if (has_val) {
-        val.~T();  // NOLINT
+        std::destroy_at(std::addressof(this->val));
       } else {
-        unex.~E();  // NOLINT
+        std::destroy_at(std::addressof(this->unex));
       }
     }
   }
@@ -355,14 +357,14 @@ class expected {
  private:
   template <class... Args>
   void construct(Args&&... args) noexcept {
-    new (std::addressof(this->val)) T(std::forward<Args>(args)...);
-    this->val = true;
+    std::construct_at(std::addressof(this->val), std::forward<Args>(args)...);
+    this->has_val = true;
   }
 
   template <class... Args>
   void construct_error(Args&&... args) noexcept {
-    new (std::addressof(this->unex)) E(std::forward<Args>(args)...);
-    this->val = false;
+    std::construct_at(std::addressof(this->unex), std::forward<Args>(args)...);
+    this->has_val = false;
   }
 
   bool has_val{};
