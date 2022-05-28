@@ -74,8 +74,7 @@ class unexpected {
   constexpr auto value() && noexcept -> E&& { return std::move(val); }
 
   constexpr void swap(unexpected& other) noexcept(
-      std::is_nothrow_swappable_v<E>) {
-    static_assert(std::is_swappable_v<E>);
+      std::is_nothrow_swappable_v<E>) requires(std::is_swappable_v<E>) {
     using std::swap;
     swap(val, other.val);
   }
@@ -89,14 +88,12 @@ class unexpected {
     return x.value() == y.value();
   }
 
-  friend constexpr void swap(unexpected& x,
-                             unexpected& y) noexcept(noexcept(x.swap(y))) {
-    static_assert(std::is_swappable_v<E>);
+  friend constexpr void swap(unexpected& x, unexpected& y) noexcept(
+      noexcept(x.swap(y))) requires(std::is_swappable_v<E>) {
     x.swap(y);
   }
 
- private:
-  E val;
+ private : E val;
 };
 
 template <class E>
@@ -172,6 +169,29 @@ concept is_unexpected_non_void = requires(T) {
 template <typename T>
 concept is_unexpected =
     std::same_as<T, unexpected<void>> || is_unexpected_non_void<T>;
+
+// This function makes sure expected doesn't get into valueless_by_exception
+// state due to any exception while assignment
+template <class T, class U, class... Args>
+constexpr void reinit_expected(T& newval, U& oldval, Args&&... args) {
+  if constexpr (std::is_nothrow_constructible_v<T, Args...>) {
+    std::destroy_at(std::addressof(oldval));
+    std::construct_at(std::addressof(newval), std::forward<Args>(args)...);
+  } else if constexpr (std::is_nothrow_move_constructible_v<T>) {
+    T tmp(std::forward<Args>(args)...);
+    std::destroy_at(std::addressof(oldval));
+    std::construct_at(std::addressof(newval), std::move(tmp));
+  } else {
+    U tmp(std::move(oldval));
+    std::destroy_at(std::addressof(oldval));
+    try {
+      std::construct_at(std::addressof(newval), std::forward<Args>(args)...);
+    } catch (...) {
+      std::construct_at(std::addressof(oldval), std::move(tmp));
+      throw;
+    }
+  }
+}
 }  // namespace detail
 
 template <class T, class E>
@@ -298,21 +318,132 @@ class expected {
   }
 
   // assignment
-  constexpr auto operator=(expected const&) -> expected&;
-  // TODO: noexcept clause
-  constexpr auto operator=(expected&&) noexcept -> expected&;
+  constexpr auto operator=(expected const& rhs)              // NOLINT
+      -> expected& requires std::is_copy_assignable_v<T> &&  //
+      std::is_copy_constructible_v<T> &&                     //
+      std::is_copy_assignable_v<E> &&                        //
+      std::is_copy_constructible_v<E> &&                     //
+      (std::is_nothrow_move_constructible_v<E> ||            //
+       std::is_nothrow_move_constructible_v<T>)              //
+  {
+    if (this->has_value() and rhs.has_value()) {
+      this->val = *rhs;
+    } else if (this->has_value()) {
+      detail::reinit_expected(this->unex, this->val, rhs.error());
+    } else if (rhs.has_value()) {
+      detail::reinit_expected(this->val, this->unex, *rhs);
+    } else {
+      this->unex = rhs.error();
+    }
+    return *this;
+  }
+
+  constexpr auto operator=(expected&& rhs)  //
+      noexcept(std::is_nothrow_move_assignable_v<T>&&
+                   std::is_nothrow_move_constructible_v<T>&&
+                       std::is_nothrow_move_assignable_v<E>&&
+                           std::is_nothrow_move_constructible_v<E>)
+          -> expected& requires std::is_move_constructible_v<T> &&  //
+      std::is_move_assignable_v<T> &&                               //
+      std::is_move_constructible_v<E> &&                            //
+      std::is_move_assignable_v<E> &&                               //
+      (std::is_nothrow_move_constructible_v<T> ||
+       std::is_nothrow_move_constructible_v<E>)  //
+  {
+    if (this->has_value() and rhs.has_value()) {
+      this->val = std::move(*rhs);
+    } else if (this->has_value()) {
+      detail::reinit_expected(this->unex, this->val, std::move(rhs.error()));
+    } else if (rhs.has_value()) {
+      detail::reinit_expected(this->val, this->unex, std::move(*rhs));
+    } else {
+      this->unex = std::move(rhs.error());
+    }
+    return *this;
+  }
+
   template <class U = T>
-  constexpr auto operator=(U&&) -> expected&;
+      constexpr auto operator=(U&& rhs) -> expected& requires(
+          !std::same_as<expected, std::remove_cvref_t<U>>) &&  //
+      (!detail::is_unexpected<std::remove_cvref_t<U>>)&&       //
+      std::constructible_from<T, U>&&                          //
+      std::is_assignable_v<T&, U> &&                           //
+      (std::is_nothrow_constructible_v<T, U> ||                //
+       std::is_nothrow_move_constructible_v<T> ||              //
+       std::is_nothrow_move_constructible_v<E>                 //
+      ) {
+    if (this->has_value()) {
+      this->val = std::forward<U>(rhs);
+      return *this;
+    }
+    detail::reinit_expected(this->val, this->unex, std::forward<U>(rhs));
+    has_val = true;
+    return *this;
+  }
+
   template <class G>
-  constexpr auto operator=(unexpected<G> const&) -> expected&;
+  requires std::constructible_from<E, G const&> &&      // NOLINT
+      std::is_assignable_v<E&, G const&> &&             // NOLINT
+      (std::is_nothrow_constructible_v<E, G const&> ||  // NOLINT
+       std::is_nothrow_move_constructible_v<T> ||       // NOLINT
+       std::is_nothrow_move_constructible_v<E>          // NOLINT
+       ) constexpr auto
+      operator=(unexpected<G> const& e) -> expected& {
+    using GF = G const&;
+    if (has_value()) {
+      detail::reinit_expected(this->unex, this->val,
+                              std::forward<GF>(e.value()));
+    } else {
+      this->unex = std::forward<GF>(e.value());
+    }
+    return *this;
+  }
+
   template <class G>
-  constexpr auto operator=(unexpected<G>&&) -> expected&;
+  requires std::constructible_from<E, G> &&        // NOLINT
+      std::is_assignable_v<E&, G> &&               // NOLINT
+      (std::is_nothrow_constructible_v<E, G> ||    // NOLINT
+       std::is_nothrow_move_constructible_v<T> ||  // NOLINT
+       std::is_nothrow_move_constructible_v<E>     // NOLINT
+       ) constexpr auto
+      operator=(unexpected<G>&& e) -> expected& {
+    using GF = G;
+    if (has_value()) {
+      detail::reinit_expected(this->unex, this->val,
+                              std::forward<GF>(e.value()));
+    } else {
+      this->unex = std::forward<GF>(e.value());
+    }
+    return *this;
+  }
 
   // modifiers
   template <class... Args>
-  constexpr auto emplace(Args&&...) noexcept -> T&;
-  template <class U, class Args>
-  constexpr auto emplace(std::initializer_list<U>, Args&&...) noexcept -> T&;
+  requires std::is_nothrow_constructible_v<T, Args...>
+  constexpr auto emplace(Args&&... args) noexcept -> T& {
+    if (has_value()) {
+      std::destroy_at(std::addressof(this->val));
+    } else {
+      std::destroy_at(std::addressof(this->unex));
+      has_val = true;
+    }
+    return *std::construct_at(std::addressof(this->val),
+                              std::forward<Args>(args)...);
+  }
+
+  template <class U, class... Args>
+  requires std::is_nothrow_constructible_v < T, std::initializer_list<U>
+  &, Args... > constexpr auto emplace(std::initializer_list<U> il,
+                                      Args&&... args) noexcept -> T& {
+    if (has_value()) {
+      std::destroy_at(std::addressof(this->val));
+    } else {
+      std::destroy_at(std::addressof(this->unex));
+      has_val = true;
+    }
+    return *std::construct_at(std::addressof(this->val), il,
+                              std::forward<Args>(args)...);
+  }
 
   // swap
   // TODO: noexcept clause
