@@ -584,13 +584,34 @@ class expected {
 
   // equality operators
   template <class T2, class E2>
-  friend constexpr auto operator==(expected const&, expected<T2, E2> const&)
-      -> bool;
+  requires requires(expected const& x, expected<T2, E2> const& y) {
+    { *x == *y } -> std::convertible_to<bool>;
+    { x.error() == y.error() } -> std::convertible_to<bool>;
+  }
+  friend constexpr auto operator==(expected const& x, expected<T2, E2> const& y)
+      -> bool {
+    if (x.has_value() != y.has_value()) {
+      return false;
+    }
+    return x.has_value() ? (*x == *y) : (x.error() == y.error());
+  }
+
   template <class T2>
-  friend constexpr auto operator==(expected const&, T2 const&) -> bool;
+  requires requires(expected const& x, T2 const& v) {
+    { *x == v } -> std::convertible_to<bool>;
+  }
+  friend constexpr auto operator==(expected const& x, T2 const& v) -> bool {
+    return x.has_value() && static_cast<bool>(*x == v);
+  }
+
   template <class E2>
-  friend constexpr auto operator==(expected const&, unexpected<E2> const&)
-      -> bool;
+  requires requires(expected const& x, unexpected<E2> const& e) {
+    { x.error() == e.value() } -> std::convertible_to<bool>;
+  }
+  friend constexpr auto operator==(expected const& x, unexpected<E2> const& e)
+      -> bool {
+    return !x.has_value() && static_cast<bool>(x.error() == e.value());
+  }
 
   // specialized algorithms
   friend constexpr void swap(expected& x,
