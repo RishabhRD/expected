@@ -40,7 +40,7 @@ template <class E>
 class unexpected {
   // TODO: figure out if move constructor and move assignment needs to be
   // noexcept
-  using error_type = E;
+  using value_type = E;
   constexpr unexpected(unexpected const&) = default;
   constexpr unexpected(unexpected&&) = default;  // NOLINT
   constexpr auto operator=(unexpected const&) -> unexpected& = default;
@@ -161,14 +161,10 @@ concept expected_constructible_from_other =
     (!std::constructible_from<unexpected<E>, expected<U, G> const>);
 
 template <typename T>
-concept is_unexpected_non_void = requires(T) {
-  typename T::error_type;
-  std::same_as<typename T::error_type, unexpected<typename T::error_type>>;
+concept is_unexpected = requires(T) {
+  typename T::value_type;
+  std::same_as<typename T::value_type, unexpected<typename T::error_type>>;
 };
-
-template <typename T>
-concept is_unexpected =
-    std::same_as<T, unexpected<void>> || is_unexpected_non_void<T>;
 
 // This function makes sure expected doesn't get into valueless_by_exception
 // state due to any exception while assignment
