@@ -499,26 +499,88 @@ class expected {
   }
 
   // observers
-  constexpr auto operator->() const noexcept -> T const*;
-  constexpr auto operator->() noexcept -> T*;
-  constexpr auto operator*() const& noexcept -> T const&;
-  constexpr auto operator*() & noexcept -> T&;
-  constexpr auto operator*() const&& noexcept -> T const&&;
-  constexpr auto operator*() && noexcept -> T&&;
-  constexpr explicit operator bool() const noexcept;
-  constexpr auto has_value() const noexcept -> bool;  // NOLINT
-  constexpr auto value() const& -> T const&;
-  constexpr auto value() & -> T&;
-  constexpr auto value() const&& -> T const&&;
-  constexpr auto value() && -> T&&;
-  constexpr auto error() const& -> E const&;
-  constexpr auto error() & -> E&;
-  constexpr auto error() const&& -> E const&&;
-  constexpr auto error() && -> E&&;
+
+  // precondition: has_value() = true
+  constexpr auto operator->() const noexcept -> T const* {
+    return std::addressof(this->val);
+  }
+
+  // precondition: has_value() = true
+  constexpr auto operator->() noexcept -> T* {
+    return std::addressof(this->val);
+  }
+
+  // precondition: has_value() = true
+  constexpr auto operator*() const& noexcept -> T const& { return this->val; }
+
+  // precondition: has_value() = true
+  constexpr auto operator*() & noexcept -> T& { return this->val; }
+
+  // precondition: has_value() = true
+  constexpr auto operator*() const&& noexcept -> T const&& {
+    return std::move(this->val);
+  }
+
+  // precondition: has_value() = true
+  constexpr auto operator*() && noexcept -> T&& { return std::move(this->val); }
+
+  constexpr explicit operator bool() const noexcept { return has_val; }
+
+  [[nodiscard]] constexpr auto has_value() const noexcept -> bool {
+    return has_val;
+  }
+
+  constexpr auto value() const& -> T const& {
+    if (has_value()) {
+      return this->val;
+    }
+    throw bad_expected_access(error());
+  }
+
+  constexpr auto value() & -> T& {
+    if (has_value()) {
+      return this->val;
+    }
+    throw bad_expected_access(error());
+  }
+
+  constexpr auto value() const&& -> T const&& {
+    if (has_value()) {
+      return std::move(this->val);
+    }
+    throw bad_expected_access(std::move(error()));
+  }
+
+  constexpr auto value() && -> T&& {
+    if (has_value()) {
+      return std::move(this->val);
+    }
+    throw bad_expected_access(std::move(error()));
+  }
+
+  // precondition: has_value() = false
+  constexpr auto error() const& -> E const& { return this->unex; }
+
+  // precondition: has_value() = false
+  constexpr auto error() & -> E& { return this->unex; }
+
+  // precondition: has_value() = false
+  constexpr auto error() const&& -> E const&& { return std::move(this->unex); }
+
+  // precondition: has_value() = false
+  constexpr auto error() && -> E&& { return std::move(this->unex); }
+
   template <class U>
-  constexpr auto value_or(U&&) const& -> T;
+  requires std::is_copy_constructible_v<T> && std::is_convertible_v<U, T>
+  constexpr auto value_or(U&& v) const& -> T {
+    return has_value() ? **this : static_cast<T>(std::forward<U>(v));
+  }
+
   template <class U>
-  constexpr auto value_or(U&&) && -> T;
+  requires std::is_move_constructible_v<T> && std::is_convertible_v<U, T>
+  constexpr auto value_or(U&& v) && -> T {
+    return has_value() ? std::move(**this) : static_cast<T>(std::forward<U>(v));
+  }
 
   // equality operators
   template <class T2, class E2>
