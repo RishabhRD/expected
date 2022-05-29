@@ -205,10 +205,14 @@ class expected {
   constexpr expected() requires std::default_initializable<T>
       : has_val{true}, val{} {};
 
+  // TODO: write constructor explicitly, as for non-trivial operation data
+  // member of union corresponding operation is deleted
   constexpr expected(expected const& rhs)  //
       requires std::copy_constructible<T> && std::copy_constructible<E>
   = default;
 
+  // TODO: write constructor explicitly, as for non-trivial operation data
+  // member of union corresponding operation is deleted
   constexpr expected(expected&&) noexcept(
       std::is_nothrow_move_constructible_v<T>&&
           std::is_nothrow_move_constructible_v<T>) requires
@@ -255,7 +259,7 @@ class expected {
   template <class G>
   requires std::constructible_from<E, G const&>
   constexpr explicit(!std::convertible_to<G const&, E>)
-      expected(unexpected<G>& e)  // NOLINT
+      expected(unexpected<G> const& e)  // NOLINT
       : expected(unexpect, e.error()) {}
 
   template <class G>
@@ -636,6 +640,114 @@ class expected {
 };
 
 template <class E>
-class expected<void, E>;
+class expected<void, E> {
+  // TODO: E shall meet Cpp17Destructible
+ public:
+  using value_type = void;
+  using error_type = E;
+  using unexpected_type = unexpected<E>;
+
+  template <class U>
+  using rebind = expected<U, error_type>;
+
+  // constructors
+
+  // postcondition: has_value() = true
+  constexpr expected() noexcept : has_val{true} {};
+
+  constexpr expected(
+      expected const& rhs) requires std::is_copy_constructible_v<E> &&
+      std::is_trivially_copy_constructible_v<E>
+  = default;
+
+  constexpr expected(
+      expected const& rhs) requires std::is_copy_constructible_v<E> {}
+
+  constexpr explicit expected(expected&&) noexcept;
+
+  template <class U, class G>
+  constexpr explicit expected(expected<U, G> const&);
+
+  template <class U, class G>
+  constexpr explicit expected(expected<U, G>&&);
+
+  template <class G>
+  constexpr expected(unexpected<G> const&);
+
+  template <class G>
+  constexpr expected(unexpected<G>&&);
+
+  constexpr explicit expected(std::in_place_t) noexcept;
+
+  template <class... Args>
+  constexpr explicit expected(unexpect_t, Args&&...);
+
+  template <class U, class... Args>
+  constexpr explicit expected(unexpect_t, std::initializer_list<U>, Args...);
+
+  // destructor
+  constexpr ~expected();
+
+  // assignment
+  constexpr auto operator=(expected const&) -> expected&;
+
+  constexpr auto operator=(expected&&) noexcept -> expected&;
+
+  template <class G>
+  constexpr auto operator=(unexpected<G> const&) -> expected&;
+
+  template <class G>
+  constexpr auto operator=(unexpected<G>&&) -> expected&;
+
+  // modifiers
+  constexpr void emplace() noexcept;
+
+  // swap
+  constexpr void swap(expected&) noexcept;
+
+  // observers
+  constexpr explicit operator bool() const noexcept;
+
+  [[nodiscard]] constexpr auto has_value() const noexcept -> bool;
+
+  constexpr void operator*() const noexcept;
+
+  constexpr void value() const&;
+
+  constexpr void value() &&;
+
+  constexpr auto error() const& -> E const&;
+
+  constexpr auto error() & -> E&;
+
+  constexpr auto error() const&& -> E const&&;
+
+  constexpr auto error() && -> E&&;
+
+  // expected equality operators
+  template <class T2, class E2>
+  requires std::is_void_v<T2>
+  friend constexpr auto operator==(expected const& x, expected<T2, E2> const& y)
+      -> bool;
+
+  template <class E2>
+  friend constexpr auto operator==(expected const&, unexpected<E2> const&)
+      -> bool;
+
+  // specialized algorithms
+  friend constexpr void swap(expected&, expected&) noexcept;
+
+ private:
+  template <class... Args>
+  void construct_error(Args&&... args) noexcept {
+    std::construct_at(std::addressof(this->unex), std::forward<Args>(args)...);
+    this->has_val = false;
+  }
+
+  bool has_val{};
+  union {
+    E unex;
+  };
+};
 
 }  // namespace rd
