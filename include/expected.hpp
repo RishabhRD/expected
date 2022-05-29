@@ -447,7 +447,56 @@ class expected {
 
   // swap
   // TODO: noexcept clause
-  constexpr void swap(expected&) noexcept;
+  constexpr void swap(expected& rhs) noexcept(
+      std::is_nothrow_constructible_v<T>&& std::is_nothrow_swappable_v<T>&&
+          std::is_nothrow_move_constructible_v<E>&& std::is_nothrow_swappable_v<
+              E>) requires std::is_swappable_v<T> &&  //
+      std::is_swappable_v<E> &&                       //
+      std::is_move_constructible_v<T> &&              //
+      std::is_move_constructible_v<E> &&              //
+      (std::is_nothrow_constructible_v<T> ||          //
+       std::is_nothrow_constructible_v<E>)            //
+  {
+    if (rhs.has_value()) {
+      if (has_value()) {
+        using std::swap;
+        swap(this->val, rhs.val);
+      } else {
+        rhs.swap(*this);
+      }
+    } else {
+      if (has_value()) {
+        if constexpr (std::is_nothrow_move_constructible_v<E>) {
+          E tmp(std::move(rhs.unex));
+          std::destroy_at(std::addressof(rhs.unex));
+          try {
+            std::construct_at(std::addressof(rhs.val), std::move(this->val));
+            std::destroy_at(std::addressof(this->val));
+            std::construct_at(std::addressof(this->unex), std::move(tmp));
+          } catch (...) {
+            std::construct_at(std::addressof(rhs.unex), std::move(tmp));
+            throw;
+          }
+        } else {
+          T tmp(std::move(this->val));
+          std::destroy_at(std::addressof(this->val));
+          try {
+            std::construct_at(std::addressof(this->unex), std::move(rhs.unex));
+            std::destroy_at(std::addressof(rhs.unex));
+            std::construct_at(std::addressof(rhs.val), std::move(tmp));
+          } catch (...) {
+            std::construct_at(std::addressof(this->val), std::move(tmp));
+            throw;
+          }
+        }
+        has_val = false;
+        rhs.has_val = true;
+      } else {
+        using std::swap;
+        swap(this->unex, rhs.unex);
+      }
+    }
+  }
 
   // observers
   constexpr auto operator->() const noexcept -> T const*;
@@ -482,8 +531,10 @@ class expected {
       -> bool;
 
   // specialized algorithms
-  // TODO: noexcept clause
-  friend constexpr void swap(expected&, expected&) noexcept;
+  friend constexpr void swap(expected& x,
+                             expected& y) noexcept(noexcept(x.swap(y))) {
+    x.swap(y);
+  }
 
  private:
   template <class... Args>
