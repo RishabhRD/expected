@@ -895,13 +895,24 @@ class expected<void, E> {
 
   // expected equality operators
   template <class T2, class E2>
-  requires std::is_void_v<T2>
+  requires std::is_void_v<T2> &&
+      requires(expected const& x, expected<T2, E2> const& y) {
+    { x.error() == y.error() } -> std::convertible_to<bool>;
+  }
   friend constexpr auto operator==(expected const& x, expected<T2, E2> const& y)
-      -> bool;
+      -> bool {
+    if (x.has_value() != y.has_value()) return false;
+    x.has_value() || static_cast<bool>(x.error() == y.error());
+  }
 
   template <class E2>
-  friend constexpr auto operator==(expected const&, unexpected<E2> const&)
-      -> bool;
+  requires requires(expected const& x, unexpected<E2> const& e) {
+    { x.error() == e.value() } -> std::convertible_to<bool>;
+  }
+  friend constexpr auto operator==(expected const& x, unexpected<E2> const& e)
+      -> bool {
+    return !x.has_value() && static_cast<bool>(x.error() == e.value());
+  }
 
   // specialized algorithms
   friend constexpr void swap(expected& x,
