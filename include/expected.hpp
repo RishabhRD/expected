@@ -860,23 +860,38 @@ class expected<void, E> {
   }
 
   // observers
-  constexpr explicit operator bool() const noexcept;
+  constexpr explicit operator bool() const noexcept { return has_val; }
 
-  [[nodiscard]] constexpr auto has_value() const noexcept -> bool;
+  [[nodiscard]] constexpr auto has_value() const noexcept -> bool {
+    return has_val;
+  }
 
-  constexpr void operator*() const noexcept;
+  // precondition: has_value() = true
+  constexpr void operator*() const noexcept {}
 
-  constexpr void value() const&;
+  constexpr void value() const& {
+    if (!has_value()) {
+      throw bad_expected_access(error());
+    }
+  }
 
-  constexpr void value() &&;
+  constexpr void value() && {
+    if (!has_value()) {
+      throw bad_expected_access(std::move(error()));
+    }
+  }
 
-  constexpr auto error() const& -> E const&;
+  // precondition: has_value() = false
+  constexpr auto error() const& -> E const& { return this->unex; }
 
-  constexpr auto error() & -> E&;
+  // precondition: has_value() = false
+  constexpr auto error() & -> E& { return this->unex; }
 
-  constexpr auto error() const&& -> E const&&;
+  // precondition: has_value() = false
+  constexpr auto error() const&& -> E const&& { return std::move(this->unex); }
 
-  constexpr auto error() && -> E&&;
+  // precondition: has_value() = false
+  constexpr auto error() && -> E&& { return std::move(this->unex); }
 
   // expected equality operators
   template <class T2, class E2>
