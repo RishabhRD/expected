@@ -829,7 +829,12 @@ class expected<void, E> {
   }
 
   // modifiers
-  constexpr void emplace() noexcept;
+  constexpr void emplace() noexcept {
+    if (!has_value()) {
+      std::destroy_at(std::addressof(this->unex));
+      has_val = true;
+    }
+  }
 
   // swap
   constexpr void swap(expected&) noexcept;
