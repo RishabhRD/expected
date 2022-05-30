@@ -205,19 +205,41 @@ class expected {
   constexpr expected() requires std::default_initializable<T>
       : has_val{true}, val{} {};
 
-  // TODO: write constructor explicitly, as for non-trivial operation data
-  // member of union corresponding operation is deleted
   constexpr expected(expected const& rhs)  //
-      requires std::copy_constructible<T> && std::copy_constructible<E>
+      requires std::copy_constructible<T> && std::copy_constructible<E> &&
+      std::is_trivially_copy_constructible_v<T> &&
+      std::is_trivially_copy_constructible_v<E>
   = default;
 
-  // TODO: write constructor explicitly, as for non-trivial operation data
-  // member of union corresponding operation is deleted
+  constexpr expected(expected const& rhs)  //
+      requires std::copy_constructible<T> && std::copy_constructible<E>
+      : has_val(rhs.has_val) {
+    if (rhs.has_value()) {
+      this->val = *rhs;
+    } else {
+      this->unex = rhs.error();
+    }
+  }
+
   constexpr expected(expected&&) noexcept(
       std::is_nothrow_move_constructible_v<T>&&
           std::is_nothrow_move_constructible_v<T>) requires
-      std::move_constructible<T> && std::move_constructible<E>
+      std::move_constructible<T> && std::move_constructible<E> &&
+      std::is_trivially_move_constructible_v<T> &&
+      std::is_trivially_move_constructible_v<E>
   = default;
+
+  constexpr expected(expected&& rhs) noexcept(
+      std::is_nothrow_move_constructible_v<T>&&
+          std::is_nothrow_move_constructible_v<T>) requires
+      std::move_constructible<T> && std::move_constructible<E>
+      : has_val(rhs.has_value()) {
+    if (rhs.has_value()) {
+      this->val = std::move(*rhs);
+    } else {
+      this->unex = std::move(rhs.error());
+    }
+  }
 
   template <class U, class G>
   requires detail::expected_constructible_from_other<T, E, U, G, U const&,
