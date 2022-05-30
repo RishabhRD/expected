@@ -675,7 +675,7 @@ class expected<void, E> {
   // constructors
 
   // postcondition: has_value() = true
-  constexpr expected() noexcept : has_val{true} {};
+  constexpr expected() noexcept = default;
 
   constexpr expected(
       expected const& rhs) requires std::is_copy_constructible_v<E> &&
@@ -683,29 +683,84 @@ class expected<void, E> {
   = default;
 
   constexpr expected(
-      expected const& rhs) requires std::is_copy_constructible_v<E> {}
+      expected const& rhs) requires std::is_copy_constructible_v<E>
+      : has_val(rhs.has_value()) {
+    if (!rhs.has_value()) {
+      this->unex = rhs.error();
+    }
+  }
 
-  constexpr explicit expected(expected&&) noexcept;
+  constexpr expected(expected&&) noexcept(
+      std::is_nothrow_move_constructible_v<E>) requires
+      std::is_move_constructible_v<E> &&
+      std::is_trivially_move_constructible_v<E>
+  = default;
+
+  constexpr expected(expected&& rhs) noexcept(
+      std::is_nothrow_move_constructible_v<E>) requires
+      std::is_move_constructible_v<E> : has_val(rhs.has_value()) {
+    if (!rhs.has_value()) {
+      this->unex = std::move(rhs.error());
+    }
+  }
 
   template <class U, class G>
-  constexpr explicit expected(expected<U, G> const&);
+  requires std::is_void_v<U>                                              //
+      && std::is_constructible_v<E, G const&>                             //
+      &&(!std::is_constructible_v<unexpected<E>, expected<U, G>&>)        //
+      &&(!std::is_constructible_v<unexpected<E>, expected<U, G>>)         //
+      &&(!std::is_constructible_v<unexpected<E>, expected<U, G> const&>)  //
+      &&(!std::is_constructible_v<unexpected<E>, expected<U, G> const&>)  //
+      constexpr explicit(!std::is_convertible_v<G const&, E>)
+          expected(expected<U, G> const& rhs)  // NOLINT
+      : has_val(rhs.has_value()) {
+    if (!rhs.has_value()) {
+      this->unex = std::forward<G const&>(rhs.error());
+    }
+  }
 
   template <class U, class G>
-  constexpr explicit expected(expected<U, G>&&);
+  requires std::is_void_v<U>                                              //
+      && std::is_constructible_v<E, G>                                    //
+      &&(!std::is_constructible_v<unexpected<E>, expected<U, G>&>)        //
+      &&(!std::is_constructible_v<unexpected<E>, expected<U, G>>)         //
+      &&(!std::is_constructible_v<unexpected<E>, expected<U, G> const&>)  //
+      &&(!std::is_constructible_v<unexpected<E>, expected<U, G> const&>)  //
+      constexpr explicit(!std::is_convertible_v<G const&, E>)
+          expected(expected<U, G>&& rhs)  // NOLINT
+      : has_val(rhs.has_value()) {
+    if (!rhs.has_value()) {
+      this->unex = std::forward<G>(rhs.error());
+    }
+  }
 
   template <class G>
-  constexpr expected(unexpected<G> const&);
+  requires std::is_constructible_v<E, G const&>
+  constexpr explicit(!std::is_convertible_v<G const&, E>)
+      expected(unexpected<G> const& e)  // NOLINT
+      : has_val(false), unex(std::forward<G const&>(e.value())) {}
 
   template <class G>
-  constexpr expected(unexpected<G>&&);
+  requires std::is_constructible_v<E, G>
+  constexpr explicit(!std::is_convertible_v<G, E>)
+      expected(unexpected<G>&& e)  // NOLINT
+      : has_val(false), unex(std::forward<G>(e.value())) {}
 
-  constexpr explicit expected(std::in_place_t) noexcept;
+  constexpr explicit expected(std::in_place_t /*unused*/) noexcept {}
 
   template <class... Args>
-  constexpr explicit expected(unexpect_t, Args&&...);
+  requires std::is_constructible_v<E, Args...>
+  constexpr explicit expected(unexpect_t /*unused*/, Args&&... args)
+      : has_val(false), unex(std::forward<Args>(args)...) {}
 
   template <class U, class... Args>
-  constexpr explicit expected(unexpect_t, std::initializer_list<U>, Args...);
+  requires std::is_constructible_v < E, std::initializer_list<U>
+  &,
+      Args... >
+          constexpr explicit expected(unexpect_t /*unused*/,
+                                      std::initializer_list<U> il, Args... args)
+      : has_val(false),
+  unex(il, std::forward<Args>(args)...) {}
 
   // destructor
   constexpr ~expected();
@@ -766,7 +821,7 @@ class expected<void, E> {
     this->has_val = false;
   }
 
-  bool has_val{};
+  bool has_val{true};
   union {
     E unex;
   };
