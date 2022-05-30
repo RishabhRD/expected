@@ -837,7 +837,27 @@ class expected<void, E> {
   }
 
   // swap
-  constexpr void swap(expected&) noexcept;
+  constexpr void swap(expected& rhs) noexcept(
+      std::is_nothrow_move_constructible_v<E>&&
+          std::is_nothrow_swappable_v<E>) requires std::is_swappable_v<E> &&
+      std::is_move_constructible_v<E> {
+    if (rhs.has_value()) {
+      if (has_value()) {
+      } else {
+        rhs.swap(*this);
+      }
+    } else {
+      if (has_value()) {
+        std::construct_at(std::addressof(this->unex), std::move(rhs.unex));
+        std::destroy_at(std::addressof(rhs.unex));
+        has_val = false;
+        rhs.has_val = true;
+      } else {
+        using std::swap;
+        swap(this->unex, rhs.unex);
+      }
+    }
+  }
 
   // observers
   constexpr explicit operator bool() const noexcept;
@@ -869,7 +889,10 @@ class expected<void, E> {
       -> bool;
 
   // specialized algorithms
-  friend constexpr void swap(expected&, expected&) noexcept;
+  friend constexpr void swap(expected& x,
+                             expected& y) noexcept(noexcept(x.swap(y))) {
+    x.swap(y);
+  }
 
  private:
   template <class... Args>
