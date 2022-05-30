@@ -763,7 +763,10 @@ class expected<void, E> {
   unex(il, std::forward<Args>(args)...) {}
 
   // destructor
-  constexpr ~expected();
+  constexpr ~expected() requires std::is_trivially_destructible_v<E>
+  = default;
+
+  constexpr ~expected() { std::destroy_at(std::addressof(this->unex)); }
 
   // assignment
   constexpr auto operator=(expected const&) -> expected&;
