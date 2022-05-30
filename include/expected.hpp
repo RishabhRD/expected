@@ -769,15 +769,64 @@ class expected<void, E> {
   constexpr ~expected() { std::destroy_at(std::addressof(this->unex)); }
 
   // assignment
-  constexpr auto operator=(expected const&) -> expected&;
+  constexpr auto operator=(expected const& rhs) -> expected&  // NOLINT
+      requires std::is_copy_assignable_v<E> && std::is_copy_constructible_v<E> {
+    if (has_value() && rhs.has_value()) {
+    } else if (has_value()) {
+      std::construct_at(std::addressof(this->unex), rhs.unex);
+      has_val = false;
+    } else if (rhs.has_value()) {
+      std::destroy_at(std::addressof(this->unex));
+      has_val = false;
+    } else {
+      this->unex = rhs.error();
+    }
+    return *this;
+  }
 
-  constexpr auto operator=(expected&&) noexcept -> expected&;
+  constexpr auto operator=(expected&& rhs) noexcept(
+      std::is_nothrow_move_constructible_v<E>&&
+          std::is_nothrow_move_assignable_v<E>) -> expected& requires
+      std::is_move_constructible_v<E> && std::is_move_assignable_v<E> {
+    if (has_value() && rhs.has_value()) {
+    } else if (has_value()) {
+      std::construct_at(std::addressof(this->unex), std::move(rhs.unex));
+      has_val = false;
+    } else if (rhs.has_value()) {
+      std::destroy_at(std::addressof(this->unex));
+      has_val = true;
+    } else {
+      // TODO: confirm if std::move is really required
+      this->unex = std::move(rhs.error());
+    }
+    return *this;
+  }
 
   template <class G>
-  constexpr auto operator=(unexpected<G> const&) -> expected&;
+  requires std::is_constructible_v<E, G const&> and
+      std::is_assignable_v<E&, G const&>
+  constexpr auto operator=(unexpected<G> const& e) -> expected& {
+    if (has_value()) {
+      std::construct_at(std::addressof(this->unex),
+                        std::forward<G const&>(e.value()));
+      has_val = false;
+    } else {
+      this->unex = std::forward<G const&>(e.value());
+    }
+    return *this;
+  }
 
   template <class G>
-  constexpr auto operator=(unexpected<G>&&) -> expected&;
+  requires std::is_constructible_v<E, G> and std::is_assignable_v<E&, G>
+  constexpr auto operator=(unexpected<G>&& e) -> expected& {
+    if (has_value()) {
+      std::construct_at(std::addressof(this->unex), std::forward<G>(e.value()));
+      has_val = false;
+    } else {
+      this->unex = std::forward<G>(e.value());
+    }
+    return *this;
+  }
 
   // modifiers
   constexpr void emplace() noexcept;
