@@ -81,3 +81,21 @@ TEST_CASE(
   REQUIRE(!ex.has_value());
   REQUIRE(ex.error() == "test value");
 }
+
+TEST_CASE(
+    "move constructor with trivial value and error type with containing "
+    "value") {
+  rd::expected<int, int> orig{2};
+  auto const ex(std::move(orig));
+  REQUIRE(ex.has_value());
+  REQUIRE(*ex == 2);
+}
+
+TEST_CASE(
+    "move constructor with trivial value and error type with containing "
+    "error") {
+  rd::expected<int, int> orig{rd::unexpect, 2};
+  auto const ex(std::move(orig));
+  REQUIRE(!ex.has_value());
+  REQUIRE(ex.error() == 2);
+}
