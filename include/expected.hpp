@@ -239,9 +239,9 @@ class expected {
       std::move_constructible<T> && std::move_constructible<E>
       : has_val(rhs.has_value()) {
     if (rhs.has_value()) {
-      this->val = std::move(*rhs);
+      std::construct_at(std::addressof(this->val), std::move(*rhs));
     } else {
-      this->unex = std::move(rhs.error());
+      std::construct_at(std::addressof(this->unex), std::move(rhs.error()));
     }
   }
 

@@ -99,3 +99,39 @@ TEST_CASE(
   REQUIRE(!ex.has_value());
   REQUIRE(ex.error() == 2);
 }
+
+TEST_CASE(
+    "move constructor with non-trivial value and trivial error type with "
+    "containing value") {
+  rd::expected<std::string, int> orig{"test value"};
+  auto const ex(std::move(orig));
+  REQUIRE(ex.has_value());
+  REQUIRE(*ex == "test value");
+}
+
+TEST_CASE(
+    "move constructor with trivial value and non-trivial error type with "
+    "containing error") {
+  rd::expected<int, std::string> orig{rd::unexpect, "test value"};
+  auto const ex(std::move(orig));
+  REQUIRE(!ex.has_value());
+  REQUIRE(ex.error() == "test value");
+}
+
+TEST_CASE(
+    "move constructor with non trivial value and error type with "
+    "containing value") {
+  rd::expected<std::string, std::string> orig{"test value"};
+  auto const ex(std::move(orig));
+  REQUIRE(ex.has_value());
+  REQUIRE(*ex == "test value");
+}
+
+TEST_CASE(
+    "move constructor with non trivial value and error type with "
+    "containing error") {
+  rd::expected<std::string, std::string> orig{rd::unexpect, "test value"};
+  auto const ex(std::move(orig));
+  REQUIRE(!ex.has_value());
+  REQUIRE(ex.error() == "test value");
+}
