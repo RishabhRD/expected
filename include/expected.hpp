@@ -353,6 +353,7 @@ class expected {
       (std::is_nothrow_move_constructible_v<E> ||            //
        std::is_nothrow_move_constructible_v<T>)              //
   {
+    has_val = rhs.has_value();
     if (this->has_value() and rhs.has_value()) {
       this->val = *rhs;
     } else if (this->has_value()) {
@@ -377,6 +378,7 @@ class expected {
       (std::is_nothrow_move_constructible_v<T> ||
        std::is_nothrow_move_constructible_v<E>)  //
   {
+    has_val = rhs.has_value();
     if (this->has_value() and rhs.has_value()) {
       this->val = std::move(*rhs);
     } else if (this->has_value()) {
