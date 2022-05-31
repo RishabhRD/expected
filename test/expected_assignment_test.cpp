@@ -114,3 +114,18 @@ TEST_CASE("assigning values : lhs has value conversion") {
   REQUIRE(lhs.has_value());
   REQUIRE(*lhs == "2");
 }
+
+TEST_CASE("assigning values : lhs has error with no conversion") {
+  rd::expected<std::string, std::string> lhs{rd::unexpect, "value1"};
+  lhs = std::string{"value"};
+  REQUIRE(lhs.has_value());
+  REQUIRE(*lhs == "value");
+}
+
+TEST_CASE("assigning values : lhs has value conversion") {
+  rd::expected<std::string, std::string> lhs{rd::unexpect, "value1"};
+  // TODO: confirm if explicit convertable operation should work
+  lhs = int_to_str_implicit(2);
+  REQUIRE(lhs.has_value());
+  REQUIRE(*lhs == "2");
+}
