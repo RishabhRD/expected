@@ -56,3 +56,10 @@ TEST_CASE("non-trivial copy constructor with value") {
   REQUIRE(ex.has_value());
   REQUIRE(*ex == "test value");
 }
+
+TEST_CASE("non-trivial copy constructor with error") {
+  rd::expected<int, std::string> const orig{rd::unexpect, "test value"};
+  auto const ex(orig);
+  REQUIRE(!ex.has_value());
+  REQUIRE(ex.error() == "test value");
+}
