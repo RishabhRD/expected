@@ -252,3 +252,16 @@ TEST_CASE("inplace constructor with initializer list") {
   REQUIRE(ex.has_value());
   REQUIRE(*ex == std::vector<int>({2, 2}));
 }
+
+TEST_CASE("unexpect constructor") {
+  rd::expected<std::vector<int>, std::vector<int>> ex(
+      rd::unexpect, static_cast<unsigned long>(2), 2);
+  REQUIRE(!ex.has_value());
+  REQUIRE(ex.error() == std::vector<int>({2, 2}));
+}
+
+TEST_CASE("unexpect constructor with initializer list") {
+  rd::expected<std::vector<int>, std::vector<int>> ex(rd::unexpect, {2, 2});
+  REQUIRE(!ex.has_value());
+  REQUIRE(ex.error() == std::vector<int>({2, 2}));
+}
