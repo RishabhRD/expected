@@ -202,15 +202,17 @@ class expected {
   using rebind = expected<U, error_type>;
 
   // constructors
-  constexpr expected() requires std::default_initializable<T>
-      : has_val{true}, val{} {};
+  // postcondition: has_value() = true
+  constexpr expected() requires std::default_initializable<T> : val{} {};
 
+  // postcondition: has_value() = rhs.has_value()
   constexpr expected(expected const& rhs)  //
       requires std::copy_constructible<T> && std::copy_constructible<E> &&
       std::is_trivially_copy_constructible_v<T> &&
       std::is_trivially_copy_constructible_v<E>
   = default;
 
+  // postcondition: has_value() = rhs.has_value()
   constexpr expected(expected const& rhs)  //
       requires std::copy_constructible<T> && std::copy_constructible<E>
       : has_val(rhs.has_val) {
@@ -250,23 +252,22 @@ class expected {
     using UF = U const&;
     using GF = G const&;
     if (rhs.has_value()) {
-      construct(std::forward<UF>(*rhs));
+      this->val = std::forward<UF>(*rhs);
     } else {
-      construct_error(std::forward<GF>(rhs.error()));
+      this->unex = std::forward<GF>(rhs.error());
     }
-  }  // NOLINT
+  }
 
   template <class U, class G>
   requires detail::expected_constructible_from_other<T, E, U, G, U, G>
-  constexpr explicit(!std::convertible_to<U const&, T> ||
-                     !std::convertible_to<G const&, E>)
+  constexpr explicit(!std::convertible_to<U, T> || !std::convertible_to<G, E>)
       expected(expected<U, G>&& rhs) {  // NOLINT
-    using UF = U;
-    using GF = G;
+    using UF = U const&;
+    using GF = G const&;
     if (rhs.has_value()) {
-      construct(std::forward<UF>(*rhs));
+      this->val = std::forward<UF>(*rhs);
     } else {
-      construct_error(std::forward<GF>(rhs.error()));
+      this->unex = std::forward<GF>(rhs.error());
     }
   }
 
@@ -276,47 +277,45 @@ class expected {
       (!detail::is_unexpected<U>)&&                                    //
       std::constructible_from<T, U>                                    //
       constexpr explicit(!std::convertible_to<U, T>) expected(U&& v)   // NOLINT
-      : expected(std::in_place, std::forward<U>(v)) {}
+      : val(std::forward<U>(v)) {}
 
   template <class G>
   requires std::constructible_from<E, G const&>
   constexpr explicit(!std::convertible_to<G const&, E>)
       expected(unexpected<G> const& e)  // NOLINT
-      : expected(unexpect, e.error()) {}
+      : has_val{false}, unex(std::forward<G const&>(e.error())) {}
 
   template <class G>
   requires std::constructible_from<E, G>
   constexpr explicit(!std::convertible_to<G, E>)
       expected(unexpected<G>&& e)  // NOLINT
-      : expected(unexpect, std::forward<G>(e.error())) {}
+      : has_val{false}, unex(std::forward<G>(e.error())) {}
 
   template <class... Args>
   requires std::constructible_from<T, Args...>
-  constexpr explicit expected(std::in_place_t /*unused*/, Args&&... args) {
-    construct(std::forward<Args>(args)...);
-  }
+  constexpr explicit expected(std::in_place_t /*unused*/, Args&&... args)
+      : val(std::forward<Args>(args)...) {}
 
   template <class U, class... Args>
   requires std::constructible_from < T, std::initializer_list<U>
   &, Args... > constexpr explicit expected(std::in_place_t /*unused*/,
                                            std::initializer_list<U> il,
-                                           Args&&... args) {
-    construct(il, std::forward<Args>(args)...);
-  }
+                                           Args&&... args)
+      : val(il, std::forward<Args>(args)...) {}
 
   template <class... Args>
   requires std::constructible_from<E, Args...>
-  constexpr explicit expected(unexpect_t /*unused*/, Args&&... args) {
-    construct_error(std::forward<Args>(args)...);
-  }
+  constexpr explicit expected(unexpect_t /*unused*/, Args&&... args)
+      : has_val{false}, unex(std::forward<Args>(args)...) {}
 
   template <class U, class... Args>
   requires std::constructible_from < E, std::initializer_list<U>
-  &, Args... > constexpr explicit expected(unexpect_t /*unused*/,
-                                           std::initializer_list<U> il,
-                                           Args&&... args) {
-    construct_error(il, std::forward<Args>(args)...);
-  }
+  &,
+      Args... > constexpr explicit expected(unexpect_t /*unused*/,
+                                            std::initializer_list<U> il,
+                                            Args&&... args)
+      : has_val(false),
+  unex(il, std::forward<Args>(args)...) {}
 
   // destructor
   constexpr ~expected() {
@@ -468,7 +467,6 @@ class expected {
   }
 
   // swap
-  // TODO: noexcept clause
   constexpr void swap(expected& rhs) noexcept(
       std::is_nothrow_constructible_v<T>&& std::is_nothrow_swappable_v<T>&&
           std::is_nothrow_move_constructible_v<E>&& std::is_nothrow_swappable_v<
@@ -642,19 +640,7 @@ class expected {
   }
 
  private:
-  template <class... Args>
-  void construct(Args&&... args) noexcept {
-    std::construct_at(std::addressof(this->val), std::forward<Args>(args)...);
-    this->has_val = true;
-  }
-
-  template <class... Args>
-  void construct_error(Args&&... args) noexcept {
-    std::construct_at(std::addressof(this->unex), std::forward<Args>(args)...);
-    this->has_val = false;
-  }
-
-  bool has_val{};
+  bool has_val{true};
   union {
     T val;
     E unex;
@@ -921,12 +907,6 @@ class expected<void, E> {
   }
 
  private:
-  template <class... Args>
-  void construct_error(Args&&... args) noexcept {
-    std::construct_at(std::addressof(this->unex), std::forward<Args>(args)...);
-    this->has_val = false;
-  }
-
   bool has_val{true};
   union {
     E unex;
