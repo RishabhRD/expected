@@ -425,6 +425,7 @@ class expected {
     } else {
       this->unex = std::forward<GF>(e.value());
     }
+    has_val = false;
     return *this;
   }
 
@@ -443,6 +444,7 @@ class expected {
     } else {
       this->unex = std::forward<GF>(e.value());
     }
+    has_val = false;
     return *this;
   }
 

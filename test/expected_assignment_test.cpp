@@ -129,3 +129,63 @@ TEST_CASE("assigning values : lhs has value conversion") {
   REQUIRE(lhs.has_value());
   REQUIRE(*lhs == "2");
 }
+
+TEST_CASE("assigning unexpected : lhs has value without conversion") {
+  rd::expected<std::string, std::string> lhs{"value1"};
+  lhs = rd::unexpected{std::string{"value"}};
+  REQUIRE(!lhs.has_value());
+  REQUIRE(lhs.error() == "value");
+}
+
+TEST_CASE("assigning unexpected : lhs has error without conversion") {
+  rd::expected<std::string, std::string> lhs{rd::unexpect, "value1"};
+  lhs = rd::unexpected{std::string{"value"}};
+  REQUIRE(!lhs.has_value());
+  REQUIRE(lhs.error() == "value");
+}
+
+TEST_CASE("assigning unexpected : lhs has value with conversion") {
+  rd::expected<std::string, std::string> lhs{"value1"};
+  lhs = rd::unexpected{int_to_str_implicit{2}};
+  REQUIRE(!lhs.has_value());
+  REQUIRE(lhs.error() == "2");
+}
+
+TEST_CASE("assigning unexpected : lhs has error with conversion") {
+  rd::expected<std::string, std::string> lhs{rd::unexpect, "value1"};
+  lhs = rd::unexpected{int_to_str_implicit{2}};
+  REQUIRE(!lhs.has_value());
+  REQUIRE(lhs.error() == "2");
+}
+
+TEST_CASE("assigning unexpected : lhs has value without conversion COPY") {
+  rd::expected<std::string, std::string> lhs{"value1"};
+  rd::unexpected rhs{std::string{"value"}};
+  lhs = rd::unexpected{rhs};
+  REQUIRE(!lhs.has_value());
+  REQUIRE(lhs.error() == "value");
+}
+
+TEST_CASE("assigning unexpected : lhs has error without conversion COPY") {
+  rd::expected<std::string, std::string> lhs{rd::unexpect, "value1"};
+  rd::unexpected rhs{std::string{"value"}};
+  lhs = rd::unexpected{rhs};
+  REQUIRE(!lhs.has_value());
+  REQUIRE(lhs.error() == "value");
+}
+
+TEST_CASE("assigning unexpected : lhs has value with conversion COPY") {
+  rd::expected<std::string, std::string> lhs{"value1"};
+  rd::unexpected rhs{int_to_str_implicit{2}};
+  lhs = rd::unexpected{rhs};
+  REQUIRE(!lhs.has_value());
+  REQUIRE(lhs.error() == "2");
+}
+
+TEST_CASE("assigning unexpected : lhs has error with conversion COPY") {
+  rd::expected<std::string, std::string> lhs{rd::unexpect, "value1"};
+  rd::unexpected rhs{int_to_str_implicit{2}};
+  lhs = rd::unexpected{rhs};
+  REQUIRE(!lhs.has_value());
+  REQUIRE(lhs.error() == "2");
+}
