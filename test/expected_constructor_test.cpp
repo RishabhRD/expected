@@ -31,7 +31,9 @@ struct int_to_str {
  public:
   explicit int_to_str(int m) : mem(m) {}
 
-  operator std::string() const { return std::to_string(mem); }  // NOLINT
+  explicit operator std::string() const { return std::to_string(mem); }
+
+  [[nodiscard]] auto val() const -> int { return mem; }
 };
 
 TEST_CASE("default constructor") {
@@ -196,4 +198,16 @@ TEST_CASE("expected conversion-move-constructor with error") {
   REQUIRE(!ex.has_value());
   REQUIRE(orig_val == ex.has_value());
   REQUIRE(ex.error() == "2");
+}
+
+TEST_CASE("value constructor test with no conversion with value") {
+  rd::expected<int_to_str, int_to_str> ex(int_to_str(2));
+  REQUIRE(ex.has_value());
+  REQUIRE(ex->val() == 2);
+}
+
+TEST_CASE("value constructor test with conversion with value") {
+  rd::expected<std::string, int_to_str> ex(int_to_str(2));
+  REQUIRE(ex.has_value());
+  REQUIRE(*ex == "2");
 }
