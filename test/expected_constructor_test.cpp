@@ -26,18 +26,6 @@
 
 #include "test_include.hpp"
 
-struct int_to_str {
- private:
-  int mem;
-
- public:
-  explicit int_to_str(int m) : mem(m) {}
-
-  explicit operator std::string() const { return std::to_string(mem); }
-
-  [[nodiscard]] auto val() const -> int { return mem; }
-};
-
 TEST_CASE("default constructor") {
   rd::expected<std::string, int> ex;
   REQUIRE(ex.has_value());
