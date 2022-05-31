@@ -38,6 +38,7 @@ namespace rd {
 
 template <class E>
 class unexpected {
+ public:
   // TODO: figure out if move constructor and move assignment needs to be
   // noexcept
   using value_type = E;
@@ -79,9 +80,10 @@ class unexpected {
     swap(val, other.val);
   }
 
+  // TODO: actual concept is x.value() == y.value() (x, y is unexpected)
   template <class E2>
-  requires(requires(unexpected const& x, unexpected<E2> const& y) {
-    { x.value() == y.value() } -> std::convertible_to<bool>;
+  requires(requires(E const& x, E2 const& y) {
+    { x == y } -> std::convertible_to<bool>;
   })  //
       friend constexpr auto
       operator==(unexpected const& x, unexpected<E2> const& y) -> bool {
@@ -888,7 +890,7 @@ class expected<void, E> {
   friend constexpr auto operator==(expected const& x, expected<T2, E2> const& y)
       -> bool {
     if (x.has_value() != y.has_value()) return false;
-    x.has_value() || static_cast<bool>(x.error() == y.error());
+    return x.has_value() or static_cast<bool>(x.error() == y.error());
   }
 
   template <class E2>
