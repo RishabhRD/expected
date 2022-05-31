@@ -219,9 +219,9 @@ class expected {
       requires std::copy_constructible<T> && std::copy_constructible<E>
       : has_val(rhs.has_val) {
     if (rhs.has_value()) {
-      this->val = *rhs;
+      std::construct_at(std::addressof(this->val), *rhs);
     } else {
-      this->unex = rhs.error();
+      std::construct_at(std::addressof(this->unex), rhs.error());
     }
   }
 
