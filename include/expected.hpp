@@ -289,13 +289,13 @@ class expected {
   requires std::constructible_from<E, G const&>
   constexpr explicit(!std::convertible_to<G const&, E>)
       expected(unexpected<G> const& e)  // NOLINT
-      : has_val{false}, unex(std::forward<G const&>(e.error())) {}
+      : has_val{false}, unex(std::forward<G const&>(e.value())) {}
 
   template <class G>
   requires std::constructible_from<E, G>
   constexpr explicit(!std::convertible_to<G, E>)
       expected(unexpected<G>&& e)  // NOLINT
-      : has_val{false}, unex(std::forward<G>(e.error())) {}
+      : has_val{false}, unex(std::forward<G>(e.value())) {}
 
   template <class... Args>
   requires std::constructible_from<T, Args...>

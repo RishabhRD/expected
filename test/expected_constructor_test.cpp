@@ -211,3 +211,29 @@ TEST_CASE("value constructor test with conversion with value") {
   REQUIRE(ex.has_value());
   REQUIRE(*ex == "2");
 }
+
+TEST_CASE("unexpected constructor with no conversion needed : COPY") {
+  rd::unexpected e{2};
+  rd::expected<std::string, int> ex(e);
+  REQUIRE(!ex.has_value());
+  REQUIRE(ex.error() == 2);
+}
+
+TEST_CASE("unexpected constructor with conversion needed : COPY") {
+  rd::unexpected e{int_to_str(2)};
+  rd::expected<std::string, std::string> ex(e);
+  REQUIRE(!ex.has_value());
+  REQUIRE(ex.error() == "2");
+}
+
+TEST_CASE("unexpected constructor with no conversion needed : MOVE") {
+  rd::expected<std::string, int> ex(rd::unexpected{2});
+  REQUIRE(!ex.has_value());
+  REQUIRE(ex.error() == 2);
+}
+
+TEST_CASE("unexpected constructor with conversion needed : MOVE") {
+  rd::expected<std::string, std::string> ex(rd::unexpected{int_to_str(2)});
+  REQUIRE(!ex.has_value());
+  REQUIRE(ex.error() == "2");
+}
