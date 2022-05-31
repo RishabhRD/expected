@@ -24,6 +24,16 @@
 
 #include "test_include.hpp"
 
+struct int_to_str {
+ private:
+  int mem;
+
+ public:
+  explicit int_to_str(int m) : mem(m) {}
+
+  operator std::string() const { return std::to_string(mem); }  // NOLINT
+};
+
 TEST_CASE("default constructor") {
   rd::expected<std::string, int> ex;
   REQUIRE(ex.has_value());
@@ -152,4 +162,38 @@ TEST_CASE(
   REQUIRE(!ex.has_value());
   REQUIRE(ex.has_value() == orig_has_value);
   REQUIRE(ex.error() == "test value");
+}
+
+TEST_CASE("expected conversion-copy-constructor with value") {
+  rd::expected<int_to_str, int_to_str> orig(2);
+  rd::expected<std::string, std::string> ex(orig);
+  REQUIRE(ex.has_value());
+  REQUIRE(orig.has_value() == ex.has_value());
+  REQUIRE(*ex == "2");
+}
+
+TEST_CASE("expected conversion-move-constructor with value") {
+  rd::expected<int_to_str, int_to_str> orig(2);
+  auto const orig_val = orig.has_value();
+  rd::expected<std::string, std::string> ex(std::move(orig));
+  REQUIRE(ex.has_value());
+  REQUIRE(orig_val == ex.has_value());
+  REQUIRE(*ex == "2");
+}
+
+TEST_CASE("expected conversion-copy-constructor with error") {
+  rd::expected<int_to_str, int_to_str> orig(rd::unexpect, 2);
+  rd::expected<std::string, std::string> ex(orig);
+  REQUIRE(!ex.has_value());
+  REQUIRE(orig.has_value() == ex.has_value());
+  REQUIRE(ex.error() == "2");
+}
+
+TEST_CASE("expected conversion-move-constructor with error") {
+  rd::expected<int_to_str, int_to_str> orig(rd::unexpect, 2);
+  auto const orig_val = orig.has_value();
+  rd::expected<std::string, std::string> ex(std::move(orig));
+  REQUIRE(!ex.has_value());
+  REQUIRE(orig_val == ex.has_value());
+  REQUIRE(ex.error() == "2");
 }

@@ -250,26 +250,30 @@ class expected {
                                                      G const&>
   constexpr explicit(!std::convertible_to<U const&, T> ||
                      !std::convertible_to<G const&, E>)
-      expected(expected<U, G> const& rhs) {  // NOLINT
+      expected(expected<U, G> const& rhs)  // NOLINT
+      : has_val(rhs.has_value()) {
     using UF = U const&;
     using GF = G const&;
     if (rhs.has_value()) {
-      this->val = std::forward<UF>(*rhs);
+      std::construct_at(std::addressof(this->val), std::forward<UF>(*rhs));
     } else {
-      this->unex = std::forward<GF>(rhs.error());
+      std::construct_at(std::addressof(this->unex),
+                        std::forward<GF>(rhs.error()));
     }
   }
 
   template <class U, class G>
   requires detail::expected_constructible_from_other<T, E, U, G, U, G>
   constexpr explicit(!std::convertible_to<U, T> || !std::convertible_to<G, E>)
-      expected(expected<U, G>&& rhs) {  // NOLINT
+      expected(expected<U, G>&& rhs)  // NOLINT
+      : has_val(rhs.has_value()) {
     using UF = U const&;
     using GF = G const&;
     if (rhs.has_value()) {
-      this->val = std::forward<UF>(*rhs);
+      std::construct_at(std::addressof(this->val), std::forward<UF>(*rhs));
     } else {
-      this->unex = std::forward<GF>(rhs.error());
+      std::construct_at(std::addressof(this->unex),
+                        std::forward<GF>(rhs.error()));
     }
   }
 
