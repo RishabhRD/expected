@@ -22,6 +22,8 @@
  * SOFTWARE.
  */
 
+#include <vector>
+
 #include "test_include.hpp"
 
 struct int_to_str {
@@ -236,4 +238,17 @@ TEST_CASE("unexpected constructor with conversion needed : MOVE") {
   rd::expected<std::string, std::string> ex(rd::unexpected{int_to_str(2)});
   REQUIRE(!ex.has_value());
   REQUIRE(ex.error() == "2");
+}
+
+TEST_CASE("inplace constructor") {
+  rd::expected<std::vector<int>, int> ex(std::in_place,
+                                         static_cast<unsigned long>(2), 2);
+  REQUIRE(ex.has_value());
+  REQUIRE(*ex == std::vector<int>({2, 2}));
+}
+
+TEST_CASE("inplace constructor with initializer list") {
+  rd::expected<std::vector<int>, int> ex(std::in_place, {2, 2});
+  REQUIRE(ex.has_value());
+  REQUIRE(*ex == std::vector<int>({2, 2}));
 }
