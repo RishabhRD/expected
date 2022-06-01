@@ -42,6 +42,8 @@ auto error_to_int(std::string const& str) -> rd::expected<std::string, int> {
   }
 }
 
+auto add_1(int x) { return x + 1; }
+
 TEST_CASE("and_then & with value, with success continutation") {
   rd::expected<std::string, std::string> pre{"2"};
   auto post = pre.and_then(to_int);
@@ -212,4 +214,46 @@ TEST_CASE("or_else && with value, with error continuation failed on value") {
   auto post = std::move(pre).or_else(error_to_int);
   REQUIRE(post.has_value());
   REQUIRE(*post == "a2");
+}
+
+TEST_CASE("transform & with value") {
+  rd::expected<int, int> pre{2};
+  auto post = pre.transform(add_1);
+  REQUIRE(post.has_value());
+  REQUIRE(*post == 3);
+}
+
+TEST_CASE("transform & with error") {
+  rd::expected<int, int> pre{rd::unexpect, 2};
+  auto post = pre.transform(add_1);
+  REQUIRE(!post.has_value());
+  REQUIRE(post.error() == 2);
+}
+
+TEST_CASE("transform const& with value") {
+  rd::expected<int, int> const pre{2};
+  auto post = pre.transform(add_1);
+  REQUIRE(post.has_value());
+  REQUIRE(*post == 3);
+}
+
+TEST_CASE("transform const& with error") {
+  rd::expected<int, int> const pre{rd::unexpect, 2};
+  auto post = pre.transform(add_1);
+  REQUIRE(!post.has_value());
+  REQUIRE(post.error() == 2);
+}
+
+TEST_CASE("transform && with value") {
+  rd::expected<int, int> pre{2};
+  auto post = std::move(pre).transform(add_1);
+  REQUIRE(post.has_value());
+  REQUIRE(*post == 3);
+}
+
+TEST_CASE("transform && with error") {
+  rd::expected<int, int> pre{rd::unexpect, 2};
+  auto post = std::move(pre).transform(add_1);
+  REQUIRE(!post.has_value());
+  REQUIRE(post.error() == 2);
 }
