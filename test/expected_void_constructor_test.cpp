@@ -109,3 +109,8 @@ TEST_CASE("unexpected conversion constructor: conversion, COPY") {
   REQUIRE(!lhs.has_value());
   REQUIRE(lhs.error() == "2");
 }
+
+TEST_CASE("inplace_t constructor") {
+  rd::expected<void, std::string> lhs(std::in_place);
+  REQUIRE(lhs.has_value());
+}
