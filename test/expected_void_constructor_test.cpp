@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-#include <iostream>
+#include <vector>
 
 #include "test_include.hpp"
 
@@ -113,4 +113,16 @@ TEST_CASE("unexpected conversion constructor: conversion, COPY") {
 TEST_CASE("inplace_t constructor") {
   rd::expected<void, std::string> lhs(std::in_place);
   REQUIRE(lhs.has_value());
+}
+
+TEST_CASE("unexpect constructor") {
+  rd::expected<void, std::vector<int>> lhs(rd::unexpect, std::size_t{2}, 2);
+  REQUIRE(!lhs.has_value());
+  REQUIRE(lhs.error() == std::vector<int>({2, 2}));
+}
+
+TEST_CASE("unexpect initializer list constructor") {
+  rd::expected<void, std::vector<int>> lhs(rd::unexpect, {2, 2});
+  REQUIRE(!lhs.has_value());
+  REQUIRE(lhs.error() == std::vector<int>({2, 2}));
 }
