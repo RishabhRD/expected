@@ -34,6 +34,14 @@ auto to_int(std::string const& str) -> rd::expected<int, std::string> {
   }
 }
 
+auto error_to_int(std::string const& str) -> rd::expected<std::string, int> {
+  try {
+    return rd::unexpected{std::stoi(str)};
+  } catch (...) {
+    return "0";
+  }
+}
+
 TEST_CASE("and_then & with value, with success continutation") {
   rd::expected<std::string, std::string> pre{"2"};
   auto post = pre.and_then(to_int);
@@ -118,4 +126,90 @@ TEST_CASE("and_then && with error, with failed continutation on error value") {
   auto post = std::move(pre).and_then(to_int);
   REQUIRE(!post.has_value());
   REQUIRE(post.error() == "a2");
+}
+
+TEST_CASE("or_else & with value, with error continuation success on value") {
+  rd::expected<std::string, std::string> pre{"2"};
+  auto post = pre.or_else(error_to_int);
+  REQUIRE(post.has_value());
+  REQUIRE(*post == "2");
+}
+
+TEST_CASE("or_else & with error, with successfull errorcontinuation") {
+  rd::expected<std::string, std::string> pre{rd::unexpect, "2"};
+  auto post = pre.or_else(error_to_int);
+  REQUIRE(!post.has_value());
+  REQUIRE(post.error() == 2);
+}
+
+TEST_CASE("or_else & with error, with failed error continuation") {
+  rd::expected<std::string, std::string> pre{rd::unexpect, "a2"};
+  auto post = pre.or_else(error_to_int);
+  REQUIRE(post.has_value());
+  REQUIRE(*post == "0");
+}
+
+TEST_CASE("or_else & with value, with error continuation failed on value") {
+  rd::expected<std::string, std::string> pre{"a2"};
+  auto post = pre.or_else(error_to_int);
+  REQUIRE(post.has_value());
+  REQUIRE(*post == "a2");
+}
+
+TEST_CASE(
+    "or_else const& with value, with error continuation success on value") {
+  rd::expected<std::string, std::string> const pre{"2"};
+  auto post = pre.or_else(error_to_int);
+  REQUIRE(post.has_value());
+  REQUIRE(*post == "2");
+}
+
+TEST_CASE("or_else const& with error, with successfull errorcontinuation") {
+  rd::expected<std::string, std::string> const pre{rd::unexpect, "2"};
+  auto post = pre.or_else(error_to_int);
+  REQUIRE(!post.has_value());
+  REQUIRE(post.error() == 2);
+}
+
+TEST_CASE("or_else const& with error, with failed error continuation") {
+  rd::expected<std::string, std::string> const pre{rd::unexpect, "a2"};
+  auto post = pre.or_else(error_to_int);
+  REQUIRE(post.has_value());
+  REQUIRE(*post == "0");
+}
+
+TEST_CASE(
+    "or_else const& with value, with error continuation failed on value") {
+  rd::expected<std::string, std::string> const pre{"a2"};
+  auto post = pre.or_else(error_to_int);
+  REQUIRE(post.has_value());
+  REQUIRE(*post == "a2");
+}
+
+TEST_CASE("or_else && with value, with error continuation success on value") {
+  rd::expected<std::string, std::string> pre{"2"};
+  auto post = std::move(pre).or_else(error_to_int);
+  REQUIRE(post.has_value());
+  REQUIRE(*post == "2");
+}
+
+TEST_CASE("or_else && with error, with successfull errorcontinuation") {
+  rd::expected<std::string, std::string> pre{rd::unexpect, "2"};
+  auto post = std::move(pre).or_else(error_to_int);
+  REQUIRE(!post.has_value());
+  REQUIRE(post.error() == 2);
+}
+
+TEST_CASE("or_else && with error, with failed error continuation") {
+  rd::expected<std::string, std::string> pre{rd::unexpect, "a2"};
+  auto post = std::move(pre).or_else(error_to_int);
+  REQUIRE(post.has_value());
+  REQUIRE(*post == "0");
+}
+
+TEST_CASE("or_else && with value, with error continuation failed on value") {
+  rd::expected<std::string, std::string> pre{"a2"};
+  auto post = std::move(pre).or_else(error_to_int);
+  REQUIRE(post.has_value());
+  REQUIRE(*post == "a2");
 }
