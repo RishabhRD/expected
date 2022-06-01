@@ -238,3 +238,42 @@ TEST_CASE("transform && with error") {
   REQUIRE(!post.has_value());
   REQUIRE(post.error() == 2);
 }
+
+TEST_CASE("transform_error & with value") {
+  rd::expected<void, int> pre{};
+  auto post = pre.transform_error(sum_1);
+  REQUIRE(post.has_value());
+}
+
+TEST_CASE("transform_error & with error") {
+  rd::expected<void, int> pre{rd::unexpect, 2};
+  auto post = pre.transform_error(sum_1);
+  REQUIRE(!post.has_value());
+  REQUIRE(post.error() == 3);
+}
+
+TEST_CASE("transform_error const& with value") {
+  rd::expected<void, int> const pre{};
+  auto post = pre.transform_error(sum_1);
+  REQUIRE(post.has_value());
+}
+
+TEST_CASE("transform_error const& with error") {
+  rd::expected<void, int> const pre{rd::unexpect, 2};
+  auto post = pre.transform_error(sum_1);
+  REQUIRE(!post.has_value());
+  REQUIRE(post.error() == 3);
+}
+
+TEST_CASE("transform_error && with value") {
+  rd::expected<void, int> pre{};
+  auto post = std::move(pre).transform_error(sum_1);
+  REQUIRE(post.has_value());
+}
+
+TEST_CASE("transform_error && with error") {
+  rd::expected<void, int> pre{rd::unexpect, 2};
+  auto post = std::move(pre).transform_error(sum_1);
+  REQUIRE(!post.has_value());
+  REQUIRE(post.error() == 3);
+}
