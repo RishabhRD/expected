@@ -782,7 +782,7 @@ class expected<void, E> {
       has_val = false;
     } else if (rhs.has_value()) {
       std::destroy_at(std::addressof(this->unex));
-      has_val = false;
+      has_val = true;
     } else {
       this->unex = rhs.error();
     }
