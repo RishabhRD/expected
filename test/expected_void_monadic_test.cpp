@@ -27,6 +27,13 @@
 auto create_expected_success() { return rd::expected<int, int>(2); }
 auto create_expected_error() { return rd::expected<int, int>(rd::unexpect, 2); }
 
+auto create_void_expected_success(int /*unused*/) {
+  return rd::expected<void, int>{};
+}
+auto create_void_expected_error(int /*unused*/) {
+  return rd::expected<void, int>{rd::unexpect, 2};
+}
+
 TEST_CASE("and_then & with value continuation with value") {
   rd::expected<void, int> pre;
   auto post = pre.and_then(create_expected_success);
@@ -109,4 +116,79 @@ TEST_CASE("and_then && with error continuation with failure") {
   auto post = std::move(pre).and_then(create_expected_error);
   REQUIRE(!post.has_value());
   REQUIRE(post.error() == 3);
+}
+
+TEST_CASE("or_else & with value, continuation with value") {
+  rd::expected<void, int> pre;
+  auto post = pre.or_else(create_void_expected_success);
+  REQUIRE(post.has_value());
+}
+
+TEST_CASE("or_else & with value, continuation with error") {
+  rd::expected<void, int> pre;
+  auto post = pre.or_else(create_void_expected_error);
+  REQUIRE(post.has_value());
+}
+
+TEST_CASE("or_else & with error, continuation with value") {
+  rd::expected<void, int> pre{rd::unexpect, 3};
+  auto post = pre.or_else(create_void_expected_success);
+  REQUIRE(post.has_value());
+}
+
+TEST_CASE("or_else & with error, continuation with error") {
+  rd::expected<void, int> pre{rd::unexpect, 3};
+  auto post = pre.or_else(create_void_expected_error);
+  REQUIRE(!post.has_value());
+  REQUIRE(post.error() == 2);
+}
+
+TEST_CASE("or_else const& with value, continuation with value") {
+  rd::expected<void, int> const pre;
+  auto post = pre.or_else(create_void_expected_success);
+  REQUIRE(post.has_value());
+}
+
+TEST_CASE("or_else const& with value, continuation with error") {
+  rd::expected<void, int> const pre;
+  auto post = pre.or_else(create_void_expected_error);
+  REQUIRE(post.has_value());
+}
+
+TEST_CASE("or_else const& with error, continuation with value") {
+  rd::expected<void, int> const pre{rd::unexpect, 3};
+  auto post = pre.or_else(create_void_expected_success);
+  REQUIRE(post.has_value());
+}
+
+TEST_CASE("or_else const& with error, continuation with error") {
+  rd::expected<void, int> const pre{rd::unexpect, 3};
+  auto post = pre.or_else(create_void_expected_error);
+  REQUIRE(!post.has_value());
+  REQUIRE(post.error() == 2);
+}
+
+TEST_CASE("or_else && with value, continuation with value") {
+  rd::expected<void, int> pre;
+  auto post = std::move(pre).or_else(create_void_expected_success);
+  REQUIRE(post.has_value());
+}
+
+TEST_CASE("or_else && with value, continuation with error") {
+  rd::expected<void, int> pre;
+  auto post = std::move(pre).or_else(create_void_expected_error);
+  REQUIRE(post.has_value());
+}
+
+TEST_CASE("or_else && with error, continuation with value") {
+  rd::expected<void, int> pre{rd::unexpect, 3};
+  auto post = std::move(pre).or_else(create_void_expected_success);
+  REQUIRE(post.has_value());
+}
+
+TEST_CASE("or_else && with error, continuation with error") {
+  rd::expected<void, int> pre{rd::unexpect, 3};
+  auto post = std::move(pre).or_else(create_void_expected_error);
+  REQUIRE(!post.has_value());
+  REQUIRE(post.error() == 2);
 }

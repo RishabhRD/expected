@@ -1122,6 +1122,54 @@ class expected<void, E> {
     return U(unexpect, std::move(error()));
   }
 
+  template <class F, class V = E&,
+            class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
+  requires detail::is_expected<G> &&
+      std::is_same_v<typename G::value_type, void> &&
+      std::is_copy_constructible_v<E>
+  constexpr auto or_else(F&& f) & {
+    if (has_value()) {
+      return G{};
+    }
+    return std::invoke(std::forward<F>(f), error());
+  }
+
+  template <class F, class V = E const&,
+            class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
+  requires detail::is_expected<G> &&
+      std::is_same_v<typename G::value_type, void> &&
+      std::is_copy_constructible_v<E>
+  constexpr auto or_else(F&& f) const& {
+    if (has_value()) {
+      return G{};
+    }
+    return std::invoke(std::forward<F>(f), error());
+  }
+
+  template <class F, class V = E&&,
+            class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
+  requires detail::is_expected<G> &&
+      std::is_same_v<typename G::value_type, void> &&
+      std::is_move_constructible_v<E>
+  constexpr auto or_else(F&& f) && {
+    if (has_value()) {
+      return G{};
+    }
+    return std::invoke(std::forward<F>(f), std::move(error()));
+  }
+
+  template <class F, class V = E const&&,
+            class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
+  requires detail::is_expected<G> &&
+      std::is_same_v<typename G::value_type, void> &&
+      std::is_move_constructible_v<E>
+  constexpr auto or_else(F&& f) const&& {
+    if (has_value()) {
+      return G{};
+    }
+    return std::invoke(std::forward<F>(f), std::move(error()));
+  }
+
   // expected equality operators
   template <class T2, class E2>
   requires std::is_void_v<T2> && requires(E e, E2 e2) {
