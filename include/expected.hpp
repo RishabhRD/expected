@@ -900,9 +900,8 @@ class expected<void, E> {
 
   // expected equality operators
   template <class T2, class E2>
-  requires std::is_void_v<T2> &&
-      requires(expected const& x, expected<T2, E2> const& y) {
-    { x.error() == y.error() } -> std::convertible_to<bool>;
+  requires std::is_void_v<T2> && requires(E e, E2 e2) {
+    { e == e2 } -> std::convertible_to<bool>;
   }
   friend constexpr auto operator==(expected const& x, expected<T2, E2> const& y)
       -> bool {
