@@ -162,11 +162,15 @@ concept expected_constructible_from_other =
     (!std::constructible_from<unexpected<E>, expected<U, G> const&>)&&  //
     (!std::constructible_from<unexpected<E>, expected<U, G> const>);
 
+// TODO: check why requires clause doesn't work here
 template <typename T>
-concept is_unexpected = requires(T) {
-  typename T::value_type;
-  std::same_as<typename T::value_type, unexpected<typename T::error_type>>;
-};
+concept is_unexpected =
+    std::same_as<std::remove_cvref_t<T>, unexpected<typename T::value_type>>;
+
+template <typename T>
+concept is_expected =
+    std::same_as<std::remove_cvref_t<T>,
+                 expected<typename T::value_type, typename T::error_type>>;
 
 // This function makes sure expected doesn't get into valueless_by_exception
 // state due to any exception while assignment
@@ -614,9 +618,10 @@ class expected {
 
   // equality operators
   template <class T2, class E2>
-  requires requires(expected const& x, expected<T2, E2> const& y) {
-    { *x == *y } -> std::convertible_to<bool>;
-    { x.error() == y.error() } -> std::convertible_to<bool>;
+  requires(!std::is_void_v<T2>) &&
+      requires(T const& t1, T2 const& t2, E const& e1, E2 const& e2) {
+    { t1 == t2 } -> std::convertible_to<bool>;
+    { e1 == e2 } -> std::convertible_to<bool>;
   }
   friend constexpr auto operator==(expected const& x, expected<T2, E2> const& y)
       -> bool {
@@ -627,16 +632,16 @@ class expected {
   }
 
   template <class T2>
-  requires requires(expected const& x, T2 const& v) {
-    { *x == v } -> std::convertible_to<bool>;
+  requires(!detail::is_expected<T2>) && requires(T const& x, T2 const& v) {
+    { x == v } -> std::convertible_to<bool>;
   }
   friend constexpr auto operator==(expected const& x, T2 const& v) -> bool {
     return x.has_value() && static_cast<bool>(*x == v);
   }
 
   template <class E2>
-  requires requires(expected const& x, unexpected<E2> const& e) {
-    { x.error() == e.value() } -> std::convertible_to<bool>;
+  requires requires(E const& x, unexpected<E2> const& e) {
+    { x == e.value() } -> std::convertible_to<bool>;
   }
   friend constexpr auto operator==(expected const& x, unexpected<E2> const& e)
       -> bool {
