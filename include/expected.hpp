@@ -66,7 +66,8 @@ class unexpected {
       (!std::same_as<std::remove_cvref_t<Err>, unexpected>) &&      //
       (!std::same_as<std::remove_cvref_t<Err>, std::in_place_t>)&&  //
       std::constructible_from<E, Err>                               //
-      constexpr explicit unexpected(Err&& err) : val(std::forward<Err>(err)) {}
+      constexpr explicit unexpected(Err&& err)                      // NOLINT
+      : val(std::forward<Err>(err)) {}
 
   constexpr auto value() const& noexcept -> E const& { return val; }
   constexpr auto value() & noexcept -> E& { return val; }
@@ -1168,6 +1169,42 @@ class expected<void, E> {
       return G{};
     }
     return std::invoke(std::forward<F>(f), std::move(error()));
+  }
+
+  template <class F, class U = std::remove_cvref_t<std::invoke_result_t<F>>>
+  requires std::is_copy_constructible_v<E>
+  constexpr auto transform(F&& f) & {
+    if (has_value()) {
+      return expected<U, E>(std::invoke(std::forward<F>(f)));
+    }
+    return expected<U, E>(unexpect, error());
+  }
+
+  template <class F, class U = std::remove_cvref_t<std::invoke_result_t<F>>>
+  requires std::is_copy_constructible_v<E>
+  constexpr auto transform(F&& f) const& {
+    if (has_value()) {
+      return expected<U, E>(std::invoke(std::forward<F>(f)));
+    }
+    return expected<U, E>(unexpect, error());
+  }
+
+  template <class F, class U = std::remove_cvref_t<std::invoke_result_t<F>>>
+  requires std::is_move_constructible_v<E>
+  constexpr auto transform(F&& f) && {
+    if (has_value()) {
+      return expected<U, E>(std::invoke(std::forward<F>(f)));
+    }
+    return expected<U, E>(unexpect, std::move(error()));
+  }
+
+  template <class F, class U = std::remove_cvref_t<std::invoke_result_t<F>>>
+  requires std::is_move_constructible_v<E>
+  constexpr auto transform(F&& f) const&& {
+    if (has_value()) {
+      return expected<U, E>(std::invoke(std::forward<F>(f)));
+    }
+    return expected<U, E>(unexpect, std::move(error()));
   }
 
   // expected equality operators

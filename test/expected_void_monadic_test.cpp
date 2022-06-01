@@ -34,6 +34,10 @@ auto create_void_expected_error(int /*unused*/) {
   return rd::expected<void, int>{rd::unexpect, 2};
 }
 
+auto sum_1(int n) { return n + 1; }
+
+auto get_num() { return 1; }
+
 TEST_CASE("and_then & with value continuation with value") {
   rd::expected<void, int> pre;
   auto post = pre.and_then(create_expected_success);
@@ -189,6 +193,48 @@ TEST_CASE("or_else && with error, continuation with value") {
 TEST_CASE("or_else && with error, continuation with error") {
   rd::expected<void, int> pre{rd::unexpect, 3};
   auto post = std::move(pre).or_else(create_void_expected_error);
+  REQUIRE(!post.has_value());
+  REQUIRE(post.error() == 2);
+}
+
+TEST_CASE("transform & with value") {
+  rd::expected<void, int> pre;
+  auto post = pre.transform(get_num);
+  REQUIRE(post.has_value());
+  REQUIRE(*post == 1);
+}
+
+TEST_CASE("transform & with error") {
+  rd::expected<void, int> pre{rd::unexpect, 2};
+  auto post = pre.transform(get_num);
+  REQUIRE(!post.has_value());
+  REQUIRE(post.error() == 2);
+}
+
+TEST_CASE("transform const& with value") {
+  rd::expected<void, int> const pre;
+  auto post = pre.transform(get_num);
+  REQUIRE(post.has_value());
+  REQUIRE(*post == 1);
+}
+
+TEST_CASE("transform const& with error") {
+  rd::expected<void, int> const pre{rd::unexpect, 2};
+  auto post = pre.transform(get_num);
+  REQUIRE(!post.has_value());
+  REQUIRE(post.error() == 2);
+}
+
+TEST_CASE("transform && with value") {
+  rd::expected<void, int> pre;
+  auto post = std::move(pre).transform(get_num);
+  REQUIRE(post.has_value());
+  REQUIRE(*post == 1);
+}
+
+TEST_CASE("transform && with error") {
+  rd::expected<void, int> pre{rd::unexpect, 2};
+  auto post = std::move(pre).transform(get_num);
   REQUIRE(!post.has_value());
   REQUIRE(post.error() == 2);
 }
