@@ -30,3 +30,16 @@ TEST_CASE("default constructor") {
   rd::expected<void, std::string> ex;
   REQUIRE(ex.has_value());
 }
+
+TEST_CASE("copy constructor, rhs has value") {
+  rd::expected<void, std::string> rhs;
+  rd::expected<void, std::string> lhs(rhs);
+  REQUIRE(lhs.has_value());
+}
+
+TEST_CASE("copy constructor, rhs has error") {
+  rd::expected<void, std::string> rhs{rd::unexpect, "error"};
+  rd::expected<void, std::string> lhs(rhs);
+  REQUIRE(!lhs.has_value());
+  REQUIRE(lhs.error() == "error");
+}
