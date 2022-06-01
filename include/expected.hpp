@@ -676,7 +676,7 @@ class expected<void, E> {
   // constructors
 
   // postcondition: has_value() = true
-  constexpr expected() noexcept = default;
+  constexpr expected() noexcept {}  // NOLINT
 
   constexpr expected(
       expected const& rhs) requires std::is_copy_constructible_v<E> &&
@@ -764,10 +764,12 @@ class expected<void, E> {
   unex(il, std::forward<Args>(args)...) {}
 
   // destructor
-  constexpr ~expected() requires std::is_trivially_destructible_v<E>
-  = default;
-
-  constexpr ~expected() { std::destroy_at(std::addressof(this->unex)); }
+  constexpr ~expected() {
+    if constexpr (std::is_trivially_destructible_v<E>) {
+    } else {
+      if (!has_value()) std::destroy_at(std::addressof(this->unex));
+    }
+  }
 
   // assignment
   constexpr auto operator=(expected const& rhs) -> expected&  // NOLINT
