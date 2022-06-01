@@ -53,3 +53,33 @@ TEST_CASE("copy assignment: lhs has error, rhs has error") {
   REQUIRE(!lhs.has_value());
   REQUIRE(lhs.error() == "error1");
 }
+
+TEST_CASE("move assignment: lhs has value, rhs has value") {
+  rd::expected<void, std::string> lhs;
+  rd::expected<void, std::string> rhs;
+  lhs = rhs;
+  REQUIRE(lhs.has_value());
+}
+
+TEST_CASE("move assignment: lhs has value, rhs has error") {
+  rd::expected<void, std::string> lhs;
+  rd::expected<void, std::string> rhs{rd::unexpect, "error"};
+  lhs = rhs;
+  REQUIRE(!lhs.has_value());
+  REQUIRE(lhs.error() == "error");
+}
+
+TEST_CASE("move assignment: lhs has error, rhs has value") {
+  rd::expected<void, std::string> lhs{rd::unexpect, "error"};
+  rd::expected<void, std::string> rhs;
+  lhs = rhs;
+  REQUIRE(lhs.has_value());
+}
+
+TEST_CASE("move assignment: lhs has error, rhs has error") {
+  rd::expected<void, std::string> lhs{rd::unexpect, "error"};
+  rd::expected<void, std::string> rhs{rd::unexpect, "error1"};
+  lhs = rhs;
+  REQUIRE(!lhs.has_value());
+  REQUIRE(lhs.error() == "error1");
+}
