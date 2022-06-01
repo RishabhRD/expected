@@ -257,3 +257,45 @@ TEST_CASE("transform && with error") {
   REQUIRE(!post.has_value());
   REQUIRE(post.error() == 2);
 }
+
+TEST_CASE("transform_error & with value") {
+  rd::expected<int, int> pre{2};
+  auto post = pre.transform_error(add_1);
+  REQUIRE(post.has_value());
+  REQUIRE(post.value() == 2);
+}
+
+TEST_CASE("transform_error & with error") {
+  rd::expected<int, int> pre{rd::unexpect, 2};
+  auto post = pre.transform_error(add_1);
+  REQUIRE(!post.has_value());
+  REQUIRE(post.error() == 3);
+}
+
+TEST_CASE("transform_error const& with value") {
+  rd::expected<int, int> const pre{2};
+  auto post = pre.transform_error(add_1);
+  REQUIRE(post.has_value());
+  REQUIRE(post.value() == 2);
+}
+
+TEST_CASE("transform_error const& with error") {
+  rd::expected<int, int> const pre{rd::unexpect, 2};
+  auto post = pre.transform_error(add_1);
+  REQUIRE(!post.has_value());
+  REQUIRE(post.error() == 3);
+}
+
+TEST_CASE("transform_error && with value") {
+  rd::expected<int, int> pre{2};
+  auto post = std::move(pre).transform_error(add_1);
+  REQUIRE(post.has_value());
+  REQUIRE(post.value() == 2);
+}
+
+TEST_CASE("transform_error && with error") {
+  rd::expected<int, int> pre{rd::unexpect, 2};
+  auto post = std::move(pre).transform_error(add_1);
+  REQUIRE(!post.has_value());
+  REQUIRE(post.error() == 3);
+}
