@@ -56,3 +56,29 @@ TEST_CASE("move constructor, rhs has error") {
   REQUIRE(!lhs.has_value());
   REQUIRE(lhs.error() == "error");
 }
+
+TEST_CASE("expected conversion-constructor: copy, rhs has value") {
+  rd::expected<void, int_to_str> rhs;
+  rd::expected<void, std::string> lhs(rhs);
+  REQUIRE(lhs.has_value());
+}
+
+TEST_CASE("expected conversion-constructor: copy, rhs has error") {
+  rd::expected<void, int_to_str> rhs{rd::unexpect, int_to_str{2}};
+  rd::expected<void, std::string> lhs(rhs);
+  REQUIRE(!lhs.has_value());
+  REQUIRE(lhs.error() == "2");
+}
+
+TEST_CASE("expected conversion-constructor: move, rhs has value") {
+  rd::expected<void, int_to_str> rhs;
+  rd::expected<void, std::string> lhs(std::move(rhs));
+  REQUIRE(lhs.has_value());
+}
+
+TEST_CASE("expected conversion-constructor: move, rhs has error") {
+  rd::expected<void, int_to_str> rhs{rd::unexpect, int_to_str{2}};
+  rd::expected<void, std::string> lhs(std::move(rhs));
+  REQUIRE(!lhs.has_value());
+  REQUIRE(lhs.error() == "2");
+}

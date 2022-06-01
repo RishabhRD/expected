@@ -716,7 +716,8 @@ class expected<void, E> {
           expected(expected<U, G> const& rhs)  // NOLINT
       : has_val(rhs.has_value()) {
     if (!rhs.has_value()) {
-      this->unex = std::forward<G const&>(rhs.error());
+      std::construct_at(std::addressof(this->unex),
+                        std::forward<G const&>(rhs.error()));
     }
   }
 
@@ -731,7 +732,8 @@ class expected<void, E> {
           expected(expected<U, G>&& rhs)  // NOLINT
       : has_val(rhs.has_value()) {
     if (!rhs.has_value()) {
-      this->unex = std::forward<G>(rhs.error());
+      std::construct_at(std::addressof(this->unex),
+                        std::forward<G>(rhs.error()));
     }
   }
 
