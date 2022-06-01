@@ -43,3 +43,16 @@ TEST_CASE("copy constructor, rhs has error") {
   REQUIRE(!lhs.has_value());
   REQUIRE(lhs.error() == "error");
 }
+
+TEST_CASE("move constructor, rhs has value") {
+  rd::expected<void, std::string> rhs;
+  rd::expected<void, std::string> lhs(std::move(rhs));
+  REQUIRE(lhs.has_value());
+}
+
+TEST_CASE("move constructor, rhs has error") {
+  rd::expected<void, std::string> rhs{rd::unexpect, "error"};
+  rd::expected<void, std::string> lhs(std::move(rhs));
+  REQUIRE(!lhs.has_value());
+  REQUIRE(lhs.error() == "error");
+}
