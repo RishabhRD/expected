@@ -29,6 +29,7 @@
 #include <concepts>
 #include <deque>
 #include <exception>
+#include <functional>
 #include <memory>
 #include <type_traits>
 #include <utility>
@@ -614,6 +615,30 @@ class expected {
   requires std::is_move_constructible_v<T> && std::is_convertible_v<U, T>
   constexpr auto value_or(U&& v) && -> T {
     return has_value() ? std::move(**this) : static_cast<T>(std::forward<U>(v));
+  }
+
+  template <class F, class V = T&,
+            class U = std::remove_cvref_t<std::invoke_result_t<F, V>>>
+  requires detail::is_expected<U> &&
+      std::is_same_v<typename U::error_type, E> &&
+      std::is_copy_constructible_v<E> && std::is_copy_constructible_v<U>
+  constexpr auto and_then(F&& f) & {
+    if (has_value()) {
+      return std::invoke(std::forward<F>(f), **this);
+    }
+    return U(unexpect, error());
+  }
+
+  template <class F, class V = T const&,
+            class U = std::remove_cvref_t<std::invoke_result_t<F, V>>>
+  requires detail::is_expected<U> &&
+      std::is_same_v<typename U::error_type, E> &&
+      std::is_copy_constructible_v<E> && std::is_copy_constructible_v<U>
+  constexpr auto and_then(F&& f) const& {
+    if (has_value()) {
+      return std::invoke(std::forward<F>(f), **this);
+    }
+    return U(unexpect, error());
   }
 
   // equality operators
