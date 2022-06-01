@@ -82,3 +82,30 @@ TEST_CASE("expected conversion-constructor: move, rhs has error") {
   REQUIRE(!lhs.has_value());
   REQUIRE(lhs.error() == "2");
 }
+
+TEST_CASE("unexpected conversion constructor: no conversion, COPY") {
+  rd::unexpected<std::string> e{"error"};
+  rd::expected<void, std::string> lhs(e);
+  REQUIRE(!lhs.has_value());
+  REQUIRE(lhs.error() == "error");
+}
+
+TEST_CASE("unexpected conversion constructor: conversion, COPY") {
+  rd::unexpected<int_to_str> e{2};
+  rd::expected<void, std::string> lhs(e);
+  REQUIRE(!lhs.has_value());
+  REQUIRE(lhs.error() == "2");
+}
+
+TEST_CASE("unexpected conversion constructor: no conversion, COPY") {
+  rd::unexpected<std::string> e{"error"};
+  rd::expected<void, std::string> lhs(std::move(e));
+  REQUIRE(!lhs.has_value());
+  REQUIRE(lhs.error() == "error");
+}
+
+TEST_CASE("unexpected conversion constructor: conversion, COPY") {
+  rd::expected<void, std::string> lhs(rd::unexpected<int_to_str>{2});
+  REQUIRE(!lhs.has_value());
+  REQUIRE(lhs.error() == "2");
+}
