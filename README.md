@@ -39,7 +39,7 @@ exceptions should be used.
 error_code used to be simplest error handling mechanism. Historically,
 error_code is a simple integer, that is not good for rich error context.
 
-Nowadays, C++ header \\&lt;system_error> provides richer error code. However,
+Nowadays, C++ header &lt;system_error> provides richer error code. However,
 error_code leads to monopolization of return channel. And thus value need to be
 outputted with some other channel.
 
@@ -139,10 +139,10 @@ initialize E(error part of expected).
 
 ```cpp
 template <class G>
-constexpr expected(unexpected<G> const&)
+constexpr expected(unexpected<G> const&);
 
 template <class G>
-constexpr expected(unexpected<G> &&)
+constexpr expected(unexpected<G> &&);
 ```
 
 in_place_t constructor:
