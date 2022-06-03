@@ -384,3 +384,95 @@ constexpr friend bool operator==(expected const&, U const&);
 template <class G>
 constexpr friend bool operator==(expected const&, rd::unexpected<G> const&);
 ```
+
+### rd::unexpected
+
+```cpp
+template <typename T>
+class unexpected
+```
+
+#### Member types
+
+```cpp
+using value_type = T
+```
+
+#### Constructors
+
+Copy constructor:
+
+```cpp
+constexpr unexpected(unexpected const&);
+```
+
+Move constructor:
+
+```cpp
+constexpr unexpected(unexpected&&);
+```
+
+in_place_t constructor:
+
+It accepts a std::in_place tag and constructs T with args.
+
+```cpp
+template <typename ...Args>
+constexpr unexpected(std::in_place_t, Args&&... args);
+
+template <typename U, typename ...Args>
+constexpr unexpected(std::in_place_t, std::initializer_list<U>, Args&&... args);
+```
+
+value constructor:
+
+Constructs T with err.
+
+```cpp
+template <typename Err>
+constexpr unexpected(Err&& err);
+```
+
+#### Observer
+
+```cpp
+// value(): gets the stored T value
+
+constexpr T & value() &;
+constexpr T const& value() const&;
+constexpr T && value() &&;
+constexpr T const&& value() const&&;
+```
+
+#### Equality operator
+
+```cpp
+template <class E2>
+friend constexpr bool operator==(unexpected const& x, unexpected<E2> const& y);
+```
+
+### rd::bad_expected_access
+
+bad_expected_access derives from exception. Stores the error value.
+
+```cpp
+template<class E>
+class bad_expected_access;
+```
+
+```cpp
+E& error() & noexcept;
+E const& error() const& noexcept;
+E&& error() && noexcept;
+E const&& error() const&& noexcept;
+```
+
+### rd::unexpect_t
+
+This is just a tag type, to signify constructing error for expected.
+
+Library also exposes a unexpect variable of type rd::unexpect_t.
+
+```cpp
+inline constexpr unexpect_t unexpect{};
+```
