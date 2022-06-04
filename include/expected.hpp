@@ -623,7 +623,7 @@ class expected {
             class U = std::remove_cvref_t<std::invoke_result_t<F, V>>>
   requires detail::is_expected<U> &&
       std::is_same_v<typename U::error_type, E> &&
-      std::is_copy_constructible_v<E> && std::is_copy_constructible_v<U>
+      std::is_copy_constructible_v<E> && std::is_copy_constructible_v<T>
   constexpr auto and_then(F&& f) & {
     if (has_value()) {
       return std::invoke(std::forward<F>(f), **this);
@@ -635,7 +635,7 @@ class expected {
             class U = std::remove_cvref_t<std::invoke_result_t<F, V>>>
   requires detail::is_expected<U> &&
       std::is_same_v<typename U::error_type, E> &&
-      std::is_copy_constructible_v<E> && std::is_copy_constructible_v<U>
+      std::is_copy_constructible_v<E> && std::is_copy_constructible_v<T>
   constexpr auto and_then(F&& f) const& {
     if (has_value()) {
       return std::invoke(std::forward<F>(f), **this);
@@ -647,7 +647,7 @@ class expected {
             class U = std::remove_cvref_t<std::invoke_result_t<F, V>>>
   requires detail::is_expected<U> &&
       std::is_same_v<typename U::error_type, E> &&
-      std::is_move_constructible_v<E> && std::is_move_constructible_v<U>
+      std::is_move_constructible_v<E> && std::is_move_constructible_v<T>
   constexpr auto and_then(F&& f) && {
     if (has_value()) {
       return std::invoke(std::forward<F>(f), std::move(**this));
@@ -659,7 +659,7 @@ class expected {
             class U = std::remove_cvref_t<std::invoke_result_t<F, V>>>
   requires detail::is_expected<U> &&
       std::is_same_v<typename U::error_type, E> &&
-      std::is_move_constructible_v<E> && std::is_move_constructible_v<U>
+      std::is_move_constructible_v<E> && std::is_move_constructible_v<T>
   constexpr auto and_then(F&& f) const&& {
     if (has_value()) {
       return std::invoke(std::forward<F>(f), std::move(**this));
@@ -671,7 +671,7 @@ class expected {
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
   requires detail::is_expected<G> &&
       std::is_same_v<typename G::value_type, T> &&
-      std::is_copy_constructible_v<T> && std::is_copy_constructible_v<G>
+      std::is_copy_constructible_v<T> && std::is_copy_constructible_v<E>
   constexpr auto or_else(F&& f) & {
     if (has_value()) {
       return G(**this);
@@ -683,7 +683,7 @@ class expected {
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
   requires detail::is_expected<G> &&
       std::is_same_v<typename G::value_type, T> &&
-      std::is_copy_constructible_v<T> && std::is_copy_constructible_v<G>
+      std::is_copy_constructible_v<T> && std::is_copy_constructible_v<E>
   constexpr auto or_else(F&& f) const& {
     if (has_value()) {
       return G(**this);
@@ -695,7 +695,7 @@ class expected {
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
   requires detail::is_expected<G> &&
       std::is_same_v<typename G::value_type, T> &&
-      std::is_move_constructible_v<T> && std::is_move_constructible_v<G>
+      std::is_move_constructible_v<T> && std::is_move_constructible_v<E>
   constexpr auto or_else(F&& f) && {
     if (has_value()) {
       return G(std::move(**this));
@@ -707,7 +707,7 @@ class expected {
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
   requires detail::is_expected<G> &&
       std::is_same_v<typename G::value_type, T> &&
-      std::is_move_constructible_v<T> && std::is_move_constructible_v<G>
+      std::is_move_constructible_v<T> && std::is_move_constructible_v<E>
   constexpr auto or_else(F&& f) const&& {
     if (has_value()) {
       return G(std::move(**this));
@@ -717,47 +717,69 @@ class expected {
 
   template <class F, class V = T&,
             class U = std::remove_cvref_t<std::invoke_result_t<F, V>>>
-  requires std::is_copy_constructible_v<E> && std::is_copy_constructible_v<U>
+  requires std::is_copy_constructible_v<E> && std::is_copy_constructible_v<T>
   constexpr auto transform(F&& f) & {
     if (has_value()) {
-      return expected<U, E>(std::invoke(std::forward<F>(f), **this));
+      if constexpr (!std::same_as<U, void>) {
+        return expected<U, E>(std::invoke(std::forward<F>(f), **this));
+      } else {
+        std::invoke(std::forward<F>(f), std::move(**this));
+        return expected<U, E>();
+      }
     }
     return expected<U, E>(unexpect, error());
   }
 
   template <class F, class V = T const&,
             class U = std::remove_cvref_t<std::invoke_result_t<F, V>>>
-  requires std::is_copy_constructible_v<E> && std::is_copy_constructible_v<U>
+  requires std::is_copy_constructible_v<E> && std::is_copy_constructible_v<T>
   constexpr auto transform(F&& f) const& {
     if (has_value()) {
-      return expected<U, E>(std::invoke(std::forward<F>(f), **this));
+      if constexpr (!std::same_as<U, void>) {
+        return expected<U, E>(std::invoke(std::forward<F>(f), **this));
+      } else {
+        std::invoke(std::forward<F>(f), std::move(**this));
+        return expected<U, E>();
+      }
     }
     return expected<U, E>(unexpect, error());
   }
 
   template <class F, class V = T&&,
             class U = std::remove_cvref_t<std::invoke_result_t<F, V>>>
-  requires std::is_move_constructible_v<E> && std::is_move_constructible_v<U>
+  requires std::is_move_constructible_v<E> && std::is_move_constructible_v<T>
   constexpr auto transform(F&& f) && {
     if (has_value()) {
-      return expected<U, E>(std::invoke(std::forward<F>(f), std::move(**this)));
+      if constexpr (!std::same_as<U, void>) {
+        return expected<U, E>(
+            std::invoke(std::forward<F>(f), std::move(**this)));
+      } else {
+        std::invoke(std::forward<F>(f), std::move(**this));
+        return expected<U, E>();
+      }
     }
     return expected<U, E>(unexpect, std::move(error()));
   }
 
   template <class F, class V = T const&&,
             class U = std::remove_cvref_t<std::invoke_result_t<F, V>>>
-  requires std::is_move_constructible_v<E> && std::is_move_constructible_v<U>
+  requires std::is_move_constructible_v<E> && std::is_move_constructible_v<T>
   constexpr auto transform(F&& f) const&& {
     if (has_value()) {
-      return expected<U, E>(std::invoke(std::forward<F>(f), std::move(**this)));
+      if constexpr (!std::same_as<U, void>) {
+        return expected<U, E>(
+            std::invoke(std::forward<F>(f), std::move(**this)));
+      } else {
+        std::invoke(std::forward<F>(f), std::move(**this));
+        return expected<U, E>();
+      }
     }
     return expected<U, E>(unexpect, std::move(error()));
   }
 
   template <class F, class V = E&,
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
-  requires std::is_copy_constructible_v<T> && std::is_copy_constructible_v<G>
+  requires std::is_copy_constructible_v<T> && std::is_copy_constructible_v<E>
   constexpr auto transform_error(F&& f) & {
     if (has_value()) {
       return expected<T, G>(**this);
@@ -767,7 +789,7 @@ class expected {
 
   template <class F, class V = E const&,
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
-  requires std::is_copy_constructible_v<T> && std::is_copy_constructible_v<G>
+  requires std::is_copy_constructible_v<T> && std::is_copy_constructible_v<E>
   constexpr auto transform_error(F&& f) const& {
     if (has_value()) {
       return expected<T, G>(**this);
@@ -777,7 +799,7 @@ class expected {
 
   template <class F, class V = E&&,
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
-  requires std::is_move_constructible_v<T> && std::is_move_constructible_v<G>
+  requires std::is_move_constructible_v<T> && std::is_move_constructible_v<E>
   constexpr auto transform_error(F&& f) && {
     if (has_value()) {
       return expected<T, G>(std::move(**this));
@@ -788,7 +810,7 @@ class expected {
 
   template <class F, class V = E const&&,
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
-  requires std::is_move_constructible_v<T> && std::is_move_constructible_v<G>
+  requires std::is_move_constructible_v<T> && std::is_move_constructible_v<E>
   constexpr auto transform_error(F&& f) const&& {
     if (has_value()) {
       return expected<T, G>(std::move(**this));
@@ -1174,7 +1196,12 @@ class expected<void, E> {
   requires std::is_copy_constructible_v<E>
   constexpr auto transform(F&& f) & {
     if (has_value()) {
-      return expected<U, E>(std::invoke(std::forward<F>(f)));
+      if constexpr (!std::same_as<U, void>) {
+        return expected<U, E>(std::invoke(std::forward<F>(f)));
+      } else {
+        std::invoke(std::forward<F>(f));
+        return expected<U, E>();
+      }
     }
     return expected<U, E>(unexpect, error());
   }
@@ -1183,7 +1210,12 @@ class expected<void, E> {
   requires std::is_copy_constructible_v<E>
   constexpr auto transform(F&& f) const& {
     if (has_value()) {
-      return expected<U, E>(std::invoke(std::forward<F>(f)));
+      if constexpr (!std::same_as<U, void>) {
+        return expected<U, E>(std::invoke(std::forward<F>(f)));
+      } else {
+        std::invoke(std::forward<F>(f));
+        return expected<U, E>();
+      }
     }
     return expected<U, E>(unexpect, error());
   }
@@ -1192,7 +1224,12 @@ class expected<void, E> {
   requires std::is_move_constructible_v<E>
   constexpr auto transform(F&& f) && {
     if (has_value()) {
-      return expected<U, E>(std::invoke(std::forward<F>(f)));
+      if constexpr (!std::same_as<U, void>) {
+        return expected<U, E>(std::invoke(std::forward<F>(f)));
+      } else {
+        std::invoke(std::forward<F>(f));
+        return expected<U, E>();
+      }
     }
     return expected<U, E>(unexpect, std::move(error()));
   }
@@ -1201,7 +1238,12 @@ class expected<void, E> {
   requires std::is_move_constructible_v<E>
   constexpr auto transform(F&& f) const&& {
     if (has_value()) {
-      return expected<U, E>(std::invoke(std::forward<F>(f)));
+      if constexpr (!std::same_as<U, void>) {
+        return expected<U, E>(std::invoke(std::forward<F>(f)));
+      } else {
+        std::invoke(std::forward<F>(f));
+        return expected<U, E>();
+      }
     }
     return expected<U, E>(unexpect, std::move(error()));
   }
