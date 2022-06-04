@@ -79,6 +79,8 @@ template <typename T, typename E>
 class expected
 ```
 
+T, E can't be a reference type, as they are not supported in paper too.
+
 #### Member types
 
 ```cpp

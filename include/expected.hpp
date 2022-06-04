@@ -40,8 +40,6 @@ namespace rd {
 template <class E>
 class unexpected {
  public:
-  // TODO: figure out if move constructor and move assignment needs to be
-  // noexcept
   using value_type = E;
   constexpr unexpected(unexpected const&) = default;
   constexpr unexpected(unexpected&&) = default;  // NOLINT
@@ -82,7 +80,6 @@ class unexpected {
     swap(val, other.val);
   }
 
-  // TODO: actual concept is x.value() == y.value() (x, y is unexpected)
   template <class E2>
   requires(requires(E const& x, E2 const& y) {
     { x == y } -> std::convertible_to<bool>;
@@ -142,7 +139,12 @@ class bad_expected_access : public bad_expected_access<void> {
 struct unexpect_t {};
 inline constexpr unexpect_t unexpect{};
 
-template <class T, class E>
+namespace detail {
+template <typename T>
+concept non_void_destructible = std::same_as<T, void> || std::destructible<T>;
+}
+
+template <detail::non_void_destructible T, std::destructible E>
 class expected;
 
 namespace detail {
@@ -164,7 +166,6 @@ concept expected_constructible_from_other =
     (!std::constructible_from<unexpected<E>, expected<U, G> const&>)&&  //
     (!std::constructible_from<unexpected<E>, expected<U, G> const>);
 
-// TODO: check why requires clause doesn't work here
 template <typename T>
 concept is_unexpected =
     std::same_as<std::remove_cvref_t<T>, unexpected<typename T::value_type>>;
@@ -196,11 +197,11 @@ constexpr void reinit_expected(T& newval, U& oldval, Args&&... args) {
     }
   }
 }
+
 }  // namespace detail
 
-template <class T, class E>
+template <detail::non_void_destructible T, std::destructible E>
 class expected {
-  // TODO: T should follow destructible
  public:
   using value_type = T;
   using error_type = E;
@@ -842,9 +843,8 @@ class expected {
   };
 };
 
-template <class E>
+template <std::destructible E>
 class expected<void, E> {
-  // TODO: E shall meet Cpp17Destructible
  public:
   using value_type = void;
   using error_type = E;
@@ -981,7 +981,6 @@ class expected<void, E> {
       std::destroy_at(std::addressof(this->unex));
       has_val = true;
     } else {
-      // TODO: confirm if std::move is really required
       this->unex = std::move(rhs.error());
     }
     return *this;
