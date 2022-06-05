@@ -715,6 +715,56 @@ class expected {
     return std::invoke(std::forward<F>(f), std::move(error()));
   }
 
+  template <class F, class V = E&,
+            class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
+  requires std::is_void_v<G> && std::is_copy_constructible_v<T> &&
+      std::is_copy_constructible_v<E>
+  constexpr auto or_else(F&& f) & {
+    if (has_value()) {
+      return expected(*this);
+    }
+    std::invoke(std::forward<F>(f), error());
+    return expected(*this);
+  }
+
+  template <class F, class V = E const&,
+            class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
+  requires std::is_void_v<G> && std::is_copy_constructible_v<T> &&
+      std::is_copy_constructible_v<E>
+  constexpr auto or_else(F&& f) const& {
+    if (has_value()) {
+      return expected(*this);
+    }
+    std::invoke(std::forward<F>(f), error());
+    return expected(*this);
+  }
+
+  template <class F, class V = E&&,
+            class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
+  requires std::is_void_v<G> && std::is_move_constructible_v<T> &&
+      std::is_move_constructible_v<E> && std::is_copy_constructible_v<E>
+  constexpr auto or_else(F&& f) && {
+    if (has_value()) {
+      return expected(std::move(*this));
+    }
+    // TODO: is this copy necessary, as f can be just read argument function
+    std::invoke(std::forward<F>(f), error());
+    return expected(std::move(*this));
+  }
+
+  template <class F, class V = E const&&,
+            class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
+  requires std::is_void_v<G> && std::is_move_constructible_v<T> &&
+      std::is_move_constructible_v<E> && std::is_copy_constructible_v<E>
+  constexpr auto or_else(F&& f) const&& {
+    if (!has_value()) {
+      return expected(std::move(*this));
+    }
+    // TODO: is this copy necessary, as f can be just read argument function
+    std::invoke(std::forward<F>(f), error());
+    return expected(std::move(*this));
+  }
+
   template <class F, class V = T&,
             class U = std::remove_cvref_t<std::invoke_result_t<F, V>>>
   requires std::is_copy_constructible_v<E> && std::is_copy_constructible_v<T>
@@ -889,7 +939,7 @@ class expected<void, E> {
       expected const& rhs) requires std::is_copy_constructible_v<E>
       : has_val(rhs.has_value()) {
     if (!rhs.has_value()) {
-      this->unex = rhs.error();
+      std::construct_at(std::addressof(this->unex), rhs.error());
     }
   }
 
@@ -903,7 +953,7 @@ class expected<void, E> {
       std::is_nothrow_move_constructible_v<E>) requires
       std::is_move_constructible_v<E> : has_val(rhs.has_value()) {
     if (!rhs.has_value()) {
-      this->unex = std::move(rhs.error());
+      std::construct_at(std::addressof(this->unex), std::move(rhs.error()));
     }
   }
 
@@ -1190,6 +1240,54 @@ class expected<void, E> {
       return G{};
     }
     return std::invoke(std::forward<F>(f), std::move(error()));
+  }
+
+  template <class F, class V = E&,
+            class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
+  requires std::is_void_v<G> && std::is_copy_constructible_v<E>
+  constexpr auto or_else(F&& f) & {
+    if (has_value()) {
+      return expected(*this);
+    }
+    std::invoke(std::forward<F>(f), error());
+    return expected(*this);
+  }
+
+  template <class F, class V = E const&,
+            class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
+  requires std::is_void_v<G> && std::is_copy_constructible_v<E>
+  constexpr auto or_else(F&& f) const& {
+    if (has_value()) {
+      return expected(*this);
+    }
+    std::invoke(std::forward<F>(f), error());
+    return expected(*this);
+  }
+
+  template <class F, class V = E&&,
+            class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
+  requires std::is_void_v<G> && std::is_move_constructible_v<E> &&
+      std::is_copy_constructible_v<E>
+  constexpr auto or_else(F&& f) && {
+    if (has_value()) {
+      return expected(std::move(*this));
+    }
+    // TODO: is this copy necessary, as f can be just read argument function
+    std::invoke(std::forward<F>(f), error());
+    return expected(std::move(*this));
+  }
+
+  template <class F, class V = E const&&,
+            class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
+  requires std::is_void_v<G> && std::is_move_constructible_v<E> &&
+      std::is_copy_constructible_v<E>
+  constexpr auto or_else(F&& f) const&& {
+    if (!has_value()) {
+      return expected(std::move(*this));
+    }
+    // TODO: is this copy necessary, as f can be just read argument function
+    std::invoke(std::forward<F>(f), error());
+    return expected(std::move(*this));
   }
 
   template <class F, class U = std::remove_cvref_t<std::invoke_result_t<F>>>

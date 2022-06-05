@@ -64,3 +64,84 @@ TEST_CASE("transform && returns void with error") {
   REQUIRE(!e.has_value());
   REQUIRE(e.error() == 2);
 }
+
+TEST_CASE("or_else & returns void with error") {
+  rd::expected<int, std::string> ex{rd::unexpect, "error"};
+  auto e = ex.or_else([](auto) {});
+  REQUIRE(!e.has_value());
+  REQUIRE(e.error() == "error");
+}
+
+TEST_CASE("or_else const& returns void with error") {
+  rd::expected<int, std::string> const ex{rd::unexpect, "error"};
+  auto e = ex.or_else([](auto) {});
+  REQUIRE(!e.has_value());
+  REQUIRE(e.error() == "error");
+}
+
+TEST_CASE("or_else && returns void with error") {
+  rd::expected<int, std::string> ex{rd::unexpect, "error"};
+  auto e = std::move(ex).or_else([](auto) {});
+  REQUIRE(!e.has_value());
+  REQUIRE(e.error() == "error");
+}
+
+TEST_CASE("or_else & returns void with value") {
+  rd::expected<std::string, std::string> ex{"value"};
+  auto e = ex.or_else([](auto) {});
+  REQUIRE(e.has_value());
+  REQUIRE(e.value() == "value");
+}
+
+TEST_CASE("or_else const& returns void with value") {
+  rd::expected<std::string, std::string> const ex{"value"};
+  auto e = ex.or_else([](auto) {});
+  REQUIRE(e.has_value());
+  REQUIRE(e.value() == "value");
+}
+
+TEST_CASE("or_else && returns void with value") {
+  rd::expected<std::string, std::string> const ex{"value"};
+  auto e = std::move(ex).or_else([](auto) {});
+  REQUIRE(e.has_value());
+  REQUIRE(e.value() == "value");
+}
+
+TEST_CASE("or_else void & returns void with error") {
+  rd::expected<void, std::string> ex{rd::unexpect, "error"};
+  auto e = ex.or_else([](auto) {});
+  REQUIRE(!e.has_value());
+  REQUIRE(e.error() == "error");
+}
+
+TEST_CASE("or_else void const& returns void with error") {
+  rd::expected<void, std::string> const ex{rd::unexpect, "error"};
+  auto e = ex.or_else([](auto) {});
+  REQUIRE(!e.has_value());
+  REQUIRE(e.error() == "error");
+}
+
+TEST_CASE("or_else void && returns void with error") {
+  rd::expected<void, std::string> ex{rd::unexpect, "error"};
+  auto e = std::move(ex).or_else([](auto) {});
+  REQUIRE(!e.has_value());
+  REQUIRE(e.error() == "error");
+}
+
+TEST_CASE("or_else void & returns void with value") {
+  rd::expected<void, std::string> ex{};
+  auto e = ex.or_else([](auto) {});
+  REQUIRE(e.has_value());
+}
+
+TEST_CASE("or_else void const& returns void with value") {
+  rd::expected<void, std::string> const ex{};
+  auto e = ex.or_else([](auto) {});
+  REQUIRE(e.has_value());
+}
+
+TEST_CASE("or_else void && returns void with value") {
+  rd::expected<void, std::string> ex{};
+  auto e = std::move(ex).or_else([](auto) {});
+  REQUIRE(e.has_value());
+}
