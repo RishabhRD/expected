@@ -297,7 +297,7 @@ and_then:
 F should be invocable with value type of expected and should return expected
 whose error type should be E.
 It returns error of current expected, if error is there, other returns the
-result of invoking f.
+result of invoking f with value.
 
 ```cpp
 template <class F>
@@ -317,8 +317,13 @@ or_else:
 
 F should be invocable with error type of expected and should return expected
 whose value type should be T.
-It returns value of current expected, if value is there, other returns the
-result of invoking f.
+
+If `invoke_result_t<F, E>` is any specialization of expected (whose value type should be same as T), then
+if a value is there, value is returned wrapped in invoke_result_t of F otherwise returns the result of
+invoking f.
+
+If `invoke_result_t<F, E>` is void, then, if error is there, then F is invoked with error.
+Current expected is returned as result.
 
 ```cpp
 template <class F>
