@@ -483,3 +483,9 @@ Library also exposes a unexpect variable of type rd::unexpect_t.
 ```cpp
 inline constexpr unexpect_t unexpect{};
 ```
+
+## TODO
+
+-   Improve Documentation
+-   Have a conan package
+-   Add some good examples
