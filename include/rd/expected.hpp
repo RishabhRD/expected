@@ -22,8 +22,6 @@
  * SOFTWARE.
  */
 
-// TODO: manual formatting of file or improve .clang-format
-
 #pragma once
 
 #include <concepts>
@@ -60,11 +58,11 @@ class unexpected {
       : val(i_list, std::forward<Args>(args)...) {}
 
   template <class Err = E>
-  requires                                                          //
-      (!std::same_as<std::remove_cvref_t<Err>, unexpected>) &&      //
-      (!std::same_as<std::remove_cvref_t<Err>, std::in_place_t>)&&  //
-      std::constructible_from<E, Err>                               //
-      constexpr explicit unexpected(Err&& err)                      // NOLINT
+  requires
+      (!std::same_as<std::remove_cvref_t<Err>, unexpected>) &&
+      (!std::same_as<std::remove_cvref_t<Err>, std::in_place_t>)&&
+      std::constructible_from<E, Err>
+      constexpr explicit unexpected(Err&& err) // NOLINT
       : val(std::forward<Err>(err)) {}
 
   constexpr auto value() const& noexcept -> E const& { return val; }
@@ -83,14 +81,14 @@ class unexpected {
   template <class E2>
   requires(requires(E const& x, E2 const& y) {
     { x == y } -> std::convertible_to<bool>;
-  })  //
-      friend constexpr auto
-      operator==(unexpected const& x, unexpected<E2> const& y) -> bool {
+  })
+  friend constexpr auto operator==(unexpected const& x, unexpected<E2> const& y) -> bool {
     return x.value() == y.value();
   }
 
-  friend constexpr void swap(unexpected& x, unexpected& y) noexcept(
-      noexcept(x.swap(y))) requires(std::is_swappable_v<E>) {
+  friend constexpr void swap(unexpected& x, unexpected& y)
+    noexcept(noexcept(x.swap(y)))
+    requires(std::is_swappable_v<E>) {
     x.swap(y);
   }
 
@@ -151,19 +149,19 @@ namespace detail {
 template <typename T, typename E, typename U, typename G, typename UF,
           typename GF>
 concept expected_constructible_from_other =
-    std::constructible_from<T, UF> &&                                   //
-    std::constructible_from<E, GF> &&                                   //
-    (!std::constructible_from<T, expected<U, G>&>)&&                    //
-    (!std::constructible_from<T, expected<U, G>>)&&                     //
-    (!std::constructible_from<T, expected<U, G> const&>)&&              //
-    (!std::constructible_from<T, expected<U, G> const>)&&               //
-    (!std::convertible_to<expected<U, G>&, T>)&&                        //
-    (!std::convertible_to<expected<U, G>&&, T>)&&                       //
-    (!std::convertible_to<expected<U, G> const&, T>)&&                  //
-    (!std::convertible_to<expected<U, G> const&&, T>)&&                 //
-    (!std::constructible_from<unexpected<E>, expected<U, G>&>)&&        //
-    (!std::constructible_from<unexpected<E>, expected<U, G>>)&&         //
-    (!std::constructible_from<unexpected<E>, expected<U, G> const&>)&&  //
+    std::constructible_from<T, UF> &&                                   
+    std::constructible_from<E, GF> &&                                   
+    (!std::constructible_from<T, expected<U, G>&>)&&                    
+    (!std::constructible_from<T, expected<U, G>>)&&                     
+    (!std::constructible_from<T, expected<U, G> const&>)&&              
+    (!std::constructible_from<T, expected<U, G> const>)&&               
+    (!std::convertible_to<expected<U, G>&, T>)&&                        
+    (!std::convertible_to<expected<U, G>&&, T>)&&                       
+    (!std::convertible_to<expected<U, G> const&, T>)&&                  
+    (!std::convertible_to<expected<U, G> const&&, T>)&&                 
+    (!std::constructible_from<unexpected<E>, expected<U, G>&>)&&        
+    (!std::constructible_from<unexpected<E>, expected<U, G>>)&&         
+    (!std::constructible_from<unexpected<E>, expected<U, G> const&>)&&  
     (!std::constructible_from<unexpected<E>, expected<U, G> const>);
 
 template <typename T>
@@ -215,14 +213,14 @@ class expected {
   constexpr expected() requires std::default_initializable<T> : val{} {};
 
   // postcondition: has_value() = rhs.has_value()
-  constexpr expected(expected const& rhs)  //
+  constexpr expected(expected const& rhs)
       requires std::copy_constructible<T> && std::copy_constructible<E> &&
       std::is_trivially_copy_constructible_v<T> &&
       std::is_trivially_copy_constructible_v<E>
   = default;
 
   // postcondition: has_value() = rhs.has_value()
-  constexpr expected(expected const& rhs)  //
+  constexpr expected(expected const& rhs)
       requires std::copy_constructible<T> && std::copy_constructible<E>
       : has_val(rhs.has_val) {
     if (rhs.has_value()) {
@@ -285,11 +283,11 @@ class expected {
   }
 
   template <class U = T>
-  requires(!std::same_as<std::remove_cvref_t<U>, std::in_place_t>) &&  //
-      (!std::same_as<expected<T, E>, std::remove_cvref_t<U>>)&&        //
-      (!detail::is_unexpected<U>)&&                                    //
-      std::constructible_from<T, U>                                    //
-      constexpr explicit(!std::convertible_to<U, T>) expected(U&& v)   // NOLINT
+  requires(!std::same_as<std::remove_cvref_t<U>, std::in_place_t>) &&  
+      (!std::same_as<expected<T, E>, std::remove_cvref_t<U>>)&&        
+      (!detail::is_unexpected<U>)&&                                    
+      std::constructible_from<T, U>                                    
+  constexpr explicit(!std::convertible_to<U, T>) expected(U&& v)   // NOLINT
       : val(std::forward<U>(v)) {}
 
   template <class G>
@@ -353,12 +351,12 @@ class expected {
 
   // assignment
   constexpr auto operator=(expected const& rhs)              // NOLINT
-      -> expected& requires std::is_copy_assignable_v<T> &&  //
-      std::is_copy_constructible_v<T> &&                     //
-      std::is_copy_assignable_v<E> &&                        //
-      std::is_copy_constructible_v<E> &&                     //
-      (std::is_nothrow_move_constructible_v<E> ||            //
-       std::is_nothrow_move_constructible_v<T>)              //
+      -> expected& requires std::is_copy_assignable_v<T> &&  
+      std::is_copy_constructible_v<T> &&                     
+      std::is_copy_assignable_v<E> &&                        
+      std::is_copy_constructible_v<E> &&                     
+      (std::is_nothrow_move_constructible_v<E> ||            
+       std::is_nothrow_move_constructible_v<T>)              
   {
     has_val = rhs.has_value();
     if (this->has_value() and rhs.has_value()) {
@@ -375,15 +373,14 @@ class expected {
 
   constexpr auto operator=(expected&& rhs)  //
       noexcept(std::is_nothrow_move_assignable_v<T>&&
-                   std::is_nothrow_move_constructible_v<T>&&
-                       std::is_nothrow_move_assignable_v<E>&&
-                           std::is_nothrow_move_constructible_v<E>)
-          -> expected& requires std::is_move_constructible_v<T> &&  //
-      std::is_move_assignable_v<T> &&                               //
-      std::is_move_constructible_v<E> &&                            //
-      std::is_move_assignable_v<E> &&                               //
-      (std::is_nothrow_move_constructible_v<T> ||
-       std::is_nothrow_move_constructible_v<E>)  //
+               std::is_nothrow_move_constructible_v<T>&&
+               std::is_nothrow_move_assignable_v<E>&&
+               std::is_nothrow_move_constructible_v<E>)
+          -> expected& requires std::is_move_constructible_v<T> &&
+      std::is_move_assignable_v<T> &&                             
+      std::is_move_constructible_v<E> &&                          
+      std::is_move_assignable_v<E> &&                             
+      (std::is_nothrow_move_constructible_v<T> || std::is_nothrow_move_constructible_v<E>)
   {
     has_val = rhs.has_value();
     if (this->has_value() and rhs.has_value()) {
@@ -399,14 +396,15 @@ class expected {
   }
 
   template <class U = T>
-      constexpr auto operator=(U&& rhs) -> expected& requires(
-          !std::same_as<expected, std::remove_cvref_t<U>>) &&  //
-      (!detail::is_unexpected<std::remove_cvref_t<U>>)&&       //
-      std::constructible_from<T, U>&&                          //
-      std::is_assignable_v<T&, U> &&                           //
-      (std::is_nothrow_constructible_v<T, U> ||                //
-       std::is_nothrow_move_constructible_v<T> ||              //
-       std::is_nothrow_move_constructible_v<E>                 //
+      constexpr auto operator=(U&& rhs) -> expected&
+      requires
+      (!std::same_as<expected, std::remove_cvref_t<U>>) &&  
+      (!detail::is_unexpected<std::remove_cvref_t<U>>)&&       
+        std::constructible_from<T, U>&&                          
+        std::is_assignable_v<T&, U> &&                           
+      ( std::is_nothrow_constructible_v<T, U> ||                
+        std::is_nothrow_move_constructible_v<T> ||              
+        std::is_nothrow_move_constructible_v<E>                 
       ) {
     if (this->has_value()) {
       this->val = std::forward<U>(rhs);
@@ -418,13 +416,13 @@ class expected {
   }
 
   template <class G>
-  requires std::constructible_from<E, G const&> &&      // NOLINT
-      std::is_assignable_v<E&, G const&> &&             // NOLINT
-      (std::is_nothrow_constructible_v<E, G const&> ||  // NOLINT
-       std::is_nothrow_move_constructible_v<T> ||       // NOLINT
-       std::is_nothrow_move_constructible_v<E>          // NOLINT
-       ) constexpr auto
-      operator=(unexpected<G> const& e) -> expected& {
+  requires std::constructible_from<E, G const&> &&      
+      std::is_assignable_v<E&, G const&> &&             
+      (std::is_nothrow_constructible_v<E, G const&> ||  
+       std::is_nothrow_move_constructible_v<T> ||       
+       std::is_nothrow_move_constructible_v<E>          
+       ) 
+  constexpr auto operator=(unexpected<G> const& e) -> expected& {
     using GF = G const&;
     if (has_value()) {
       detail::reinit_expected(this->unex, this->val,
@@ -437,13 +435,13 @@ class expected {
   }
 
   template <class G>
-  requires std::constructible_from<E, G> &&        // NOLINT
-      std::is_assignable_v<E&, G> &&               // NOLINT
-      (std::is_nothrow_constructible_v<E, G> ||    // NOLINT
-       std::is_nothrow_move_constructible_v<T> ||  // NOLINT
-       std::is_nothrow_move_constructible_v<E>     // NOLINT
-       ) constexpr auto
-      operator=(unexpected<G>&& e) -> expected& {
+  requires std::constructible_from<E, G> &&        
+      std::is_assignable_v<E&, G> &&               
+      (std::is_nothrow_constructible_v<E, G> ||    
+       std::is_nothrow_move_constructible_v<T> ||  
+       std::is_nothrow_move_constructible_v<E>     
+       )
+  constexpr auto operator=(unexpected<G>&& e) -> expected& {
     using GF = G;
     if (has_value()) {
       detail::reinit_expected(this->unex, this->val,
@@ -470,8 +468,8 @@ class expected {
   }
 
   template <class U, class... Args>
-  requires std::is_nothrow_constructible_v < T, std::initializer_list<U>
-  &, Args... > constexpr auto emplace(std::initializer_list<U> il,
+  requires std::is_nothrow_constructible_v < T, std::initializer_list<U> &, Args...> 
+  constexpr auto emplace(std::initializer_list<U> il,
                                       Args&&... args) noexcept -> T& {
     if (has_value()) {
       std::destroy_at(std::addressof(this->val));
@@ -485,14 +483,16 @@ class expected {
 
   // swap
   constexpr void swap(expected& rhs) noexcept(
-      std::is_nothrow_constructible_v<T>&& std::is_nothrow_swappable_v<T>&&
-          std::is_nothrow_move_constructible_v<E>&& std::is_nothrow_swappable_v<
-              E>) requires std::is_swappable_v<T> &&  //
-      std::is_swappable_v<E> &&                       //
-      std::is_move_constructible_v<T> &&              //
-      std::is_move_constructible_v<E> &&              //
-      (std::is_nothrow_constructible_v<T> ||          //
-       std::is_nothrow_constructible_v<E>)            //
+      std::is_nothrow_constructible_v<T>&&
+      std::is_nothrow_swappable_v<T>&&
+      std::is_nothrow_move_constructible_v<E>&&
+      std::is_nothrow_swappable_v<E>)
+    requires std::is_swappable_v<T> &&  
+      std::is_swappable_v<E> &&                       
+      std::is_move_constructible_v<T> &&              
+      std::is_move_constructible_v<E> &&              
+      (std::is_nothrow_constructible_v<T> ||          
+       std::is_nothrow_constructible_v<E>)            
   {
     if (rhs.has_value()) {
       if (has_value()) {
@@ -608,7 +608,8 @@ class expected {
   constexpr auto error() && -> E&& { return std::move(this->unex); }
 
   template <class U>
-  requires std::is_copy_constructible_v<T> && std::is_convertible_v<U, T>
+  requires 
+  std::is_copy_constructible_v<T> && std::is_convertible_v<U, T>
   constexpr auto value_or(U&& v) const& -> T {
     return has_value() ? **this : static_cast<T>(std::forward<U>(v));
   }
@@ -635,7 +636,8 @@ class expected {
             class U = std::remove_cvref_t<std::invoke_result_t<F, V>>>
   requires detail::is_expected<U> &&
       std::is_same_v<typename U::error_type, E> &&
-      std::is_copy_constructible_v<E> && std::is_copy_constructible_v<T>
+      std::is_copy_constructible_v<E> &&
+      std::is_copy_constructible_v<T>
   constexpr auto and_then(F&& f) const& {
     if (has_value()) {
       return std::invoke(std::forward<F>(f), **this);
@@ -647,7 +649,8 @@ class expected {
             class U = std::remove_cvref_t<std::invoke_result_t<F, V>>>
   requires detail::is_expected<U> &&
       std::is_same_v<typename U::error_type, E> &&
-      std::is_move_constructible_v<E> && std::is_move_constructible_v<T>
+      std::is_move_constructible_v<E> &&
+      std::is_move_constructible_v<T>
   constexpr auto and_then(F&& f) && {
     if (has_value()) {
       return std::invoke(std::forward<F>(f), std::move(**this));
@@ -659,7 +662,8 @@ class expected {
             class U = std::remove_cvref_t<std::invoke_result_t<F, V>>>
   requires detail::is_expected<U> &&
       std::is_same_v<typename U::error_type, E> &&
-      std::is_move_constructible_v<E> && std::is_move_constructible_v<T>
+      std::is_move_constructible_v<E> &&
+      std::is_move_constructible_v<T>
   constexpr auto and_then(F&& f) const&& {
     if (has_value()) {
       return std::invoke(std::forward<F>(f), std::move(**this));
@@ -671,7 +675,8 @@ class expected {
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
   requires detail::is_expected<G> &&
       std::is_same_v<typename G::value_type, T> &&
-      std::is_copy_constructible_v<T> && std::is_copy_constructible_v<E>
+      std::is_copy_constructible_v<T> &&
+      std::is_copy_constructible_v<E>
   constexpr auto or_else(F&& f) & {
     if (has_value()) {
       return G(**this);
@@ -683,7 +688,8 @@ class expected {
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
   requires detail::is_expected<G> &&
       std::is_same_v<typename G::value_type, T> &&
-      std::is_copy_constructible_v<T> && std::is_copy_constructible_v<E>
+      std::is_copy_constructible_v<T> &&
+      std::is_copy_constructible_v<E>
   constexpr auto or_else(F&& f) const& {
     if (has_value()) {
       return G(**this);
@@ -695,7 +701,8 @@ class expected {
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
   requires detail::is_expected<G> &&
       std::is_same_v<typename G::value_type, T> &&
-      std::is_move_constructible_v<T> && std::is_move_constructible_v<E>
+      std::is_move_constructible_v<T> &&
+      std::is_move_constructible_v<E>
   constexpr auto or_else(F&& f) && {
     if (has_value()) {
       return G(std::move(**this));
@@ -707,7 +714,8 @@ class expected {
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
   requires detail::is_expected<G> &&
       std::is_same_v<typename G::value_type, T> &&
-      std::is_move_constructible_v<T> && std::is_move_constructible_v<E>
+      std::is_move_constructible_v<T> &&
+      std::is_move_constructible_v<E>
   constexpr auto or_else(F&& f) const&& {
     if (has_value()) {
       return G(std::move(**this));
@@ -717,8 +725,9 @@ class expected {
 
   template <class F, class V = E&,
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
-  requires std::is_void_v<G> && std::is_copy_constructible_v<T> &&
-      std::is_copy_constructible_v<E>
+  requires std::is_void_v<G> &&
+           std::is_copy_constructible_v<T> &&
+           std::is_copy_constructible_v<E>
   constexpr auto or_else(F&& f) & {
     if (has_value()) {
       return expected(*this);
@@ -729,8 +738,9 @@ class expected {
 
   template <class F, class V = E const&,
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
-  requires std::is_void_v<G> && std::is_copy_constructible_v<T> &&
-      std::is_copy_constructible_v<E>
+  requires std::is_void_v<G> &&
+           std::is_copy_constructible_v<T> &&
+           std::is_copy_constructible_v<E>
   constexpr auto or_else(F&& f) const& {
     if (has_value()) {
       return expected(*this);
@@ -741,8 +751,10 @@ class expected {
 
   template <class F, class V = E&&,
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
-  requires std::is_void_v<G> && std::is_move_constructible_v<T> &&
-      std::is_move_constructible_v<E> && std::is_copy_constructible_v<E>
+  requires std::is_void_v<G> &&
+           std::is_move_constructible_v<T> &&
+           std::is_move_constructible_v<E> &&
+           std::is_copy_constructible_v<E>
   constexpr auto or_else(F&& f) && {
     if (has_value()) {
       return expected(std::move(*this));
@@ -754,8 +766,10 @@ class expected {
 
   template <class F, class V = E const&&,
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
-  requires std::is_void_v<G> && std::is_move_constructible_v<T> &&
-      std::is_move_constructible_v<E> && std::is_copy_constructible_v<E>
+  requires std::is_void_v<G> &&
+           std::is_move_constructible_v<T> &&
+           std::is_move_constructible_v<E> &&
+           std::is_copy_constructible_v<E>
   constexpr auto or_else(F&& f) const&& {
     if (!has_value()) {
       return expected(std::move(*this));
@@ -767,7 +781,8 @@ class expected {
 
   template <class F, class V = T&,
             class U = std::remove_cvref_t<std::invoke_result_t<F, V>>>
-  requires std::is_copy_constructible_v<E> && std::is_copy_constructible_v<T>
+  requires std::is_copy_constructible_v<E> &&
+           std::is_copy_constructible_v<T>
   constexpr auto transform(F&& f) & {
     if (has_value()) {
       if constexpr (!std::same_as<U, void>) {
@@ -782,7 +797,8 @@ class expected {
 
   template <class F, class V = T const&,
             class U = std::remove_cvref_t<std::invoke_result_t<F, V>>>
-  requires std::is_copy_constructible_v<E> && std::is_copy_constructible_v<T>
+  requires std::is_copy_constructible_v<E> &&
+           std::is_copy_constructible_v<T>
   constexpr auto transform(F&& f) const& {
     if (has_value()) {
       if constexpr (!std::same_as<U, void>) {
@@ -797,7 +813,8 @@ class expected {
 
   template <class F, class V = T&&,
             class U = std::remove_cvref_t<std::invoke_result_t<F, V>>>
-  requires std::is_move_constructible_v<E> && std::is_move_constructible_v<T>
+  requires std::is_move_constructible_v<E> &&
+           std::is_move_constructible_v<T>
   constexpr auto transform(F&& f) && {
     if (has_value()) {
       if constexpr (!std::same_as<U, void>) {
@@ -813,7 +830,8 @@ class expected {
 
   template <class F, class V = T const&&,
             class U = std::remove_cvref_t<std::invoke_result_t<F, V>>>
-  requires std::is_move_constructible_v<E> && std::is_move_constructible_v<T>
+  requires std::is_move_constructible_v<E> &&
+           std::is_move_constructible_v<T>
   constexpr auto transform(F&& f) const&& {
     if (has_value()) {
       if constexpr (!std::same_as<U, void>) {
@@ -829,7 +847,8 @@ class expected {
 
   template <class F, class V = E&,
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
-  requires std::is_copy_constructible_v<T> && std::is_copy_constructible_v<E>
+  requires std::is_copy_constructible_v<T> &&
+           std::is_copy_constructible_v<E>
   constexpr auto transform_error(F&& f) & {
     if (has_value()) {
       return expected<T, G>(**this);
@@ -839,7 +858,8 @@ class expected {
 
   template <class F, class V = E const&,
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
-  requires std::is_copy_constructible_v<T> && std::is_copy_constructible_v<E>
+  requires std::is_copy_constructible_v<T> &&
+           std::is_copy_constructible_v<E>
   constexpr auto transform_error(F&& f) const& {
     if (has_value()) {
       return expected<T, G>(**this);
@@ -849,7 +869,8 @@ class expected {
 
   template <class F, class V = E&&,
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
-  requires std::is_move_constructible_v<T> && std::is_move_constructible_v<E>
+  requires std::is_move_constructible_v<T> &&
+           std::is_move_constructible_v<E>
   constexpr auto transform_error(F&& f) && {
     if (has_value()) {
       return expected<T, G>(std::move(**this));
@@ -860,7 +881,8 @@ class expected {
 
   template <class F, class V = E const&&,
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
-  requires std::is_move_constructible_v<T> && std::is_move_constructible_v<E>
+  requires std::is_move_constructible_v<T> &&
+           std::is_move_constructible_v<E>
   constexpr auto transform_error(F&& f) const&& {
     if (has_value()) {
       return expected<T, G>(std::move(**this));
@@ -943,27 +965,26 @@ class expected<void, E> {
     }
   }
 
-  constexpr expected(expected&&) noexcept(
-      std::is_nothrow_move_constructible_v<E>) requires
-      std::is_move_constructible_v<E> &&
-      std::is_trivially_move_constructible_v<E>
+  constexpr expected(expected&&) 
+    noexcept(std::is_nothrow_move_constructible_v<E>)
+    requires std::is_move_constructible_v<E> &&
+             std::is_trivially_move_constructible_v<E>
   = default;
 
-  constexpr expected(expected&& rhs) noexcept(
-      std::is_nothrow_move_constructible_v<E>) requires
-      std::is_move_constructible_v<E> : has_val(rhs.has_value()) {
+  constexpr expected(expected&& rhs) noexcept(std::is_nothrow_move_constructible_v<E>)
+    requires std::is_move_constructible_v<E> : has_val(rhs.has_value()) {
     if (!rhs.has_value()) {
       std::construct_at(std::addressof(this->unex), std::move(rhs.error()));
     }
   }
 
   template <class U, class G>
-  requires std::is_void_v<U>                                              //
-      && std::is_constructible_v<E, G const&>                             //
-      &&(!std::is_constructible_v<unexpected<E>, expected<U, G>&>)        //
-      &&(!std::is_constructible_v<unexpected<E>, expected<U, G>>)         //
-      &&(!std::is_constructible_v<unexpected<E>, expected<U, G> const&>)  //
-      &&(!std::is_constructible_v<unexpected<E>, expected<U, G> const&>)  //
+  requires std::is_void_v<U>                                              
+      && std::is_constructible_v<E, G const&>                             
+      &&(!std::is_constructible_v<unexpected<E>, expected<U, G>&>)        
+      &&(!std::is_constructible_v<unexpected<E>, expected<U, G>>)         
+      &&(!std::is_constructible_v<unexpected<E>, expected<U, G> const&>)  
+      &&(!std::is_constructible_v<unexpected<E>, expected<U, G> const&>)  
       constexpr explicit(!std::is_convertible_v<G const&, E>)
           expected(expected<U, G> const& rhs)  // NOLINT
       : has_val(rhs.has_value()) {
@@ -974,12 +995,12 @@ class expected<void, E> {
   }
 
   template <class U, class G>
-  requires std::is_void_v<U>                                              //
-      && std::is_constructible_v<E, G>                                    //
-      &&(!std::is_constructible_v<unexpected<E>, expected<U, G>&>)        //
-      &&(!std::is_constructible_v<unexpected<E>, expected<U, G>>)         //
-      &&(!std::is_constructible_v<unexpected<E>, expected<U, G> const&>)  //
-      &&(!std::is_constructible_v<unexpected<E>, expected<U, G> const&>)  //
+  requires std::is_void_v<U>                                              
+      && std::is_constructible_v<E, G>                                    
+      &&(!std::is_constructible_v<unexpected<E>, expected<U, G>&>)        
+      &&(!std::is_constructible_v<unexpected<E>, expected<U, G>>)         
+      &&(!std::is_constructible_v<unexpected<E>, expected<U, G> const&>)  
+      &&(!std::is_constructible_v<unexpected<E>, expected<U, G> const&>)  
       constexpr explicit(!std::is_convertible_v<G const&, E>)
           expected(expected<U, G>&& rhs)  // NOLINT
       : has_val(rhs.has_value()) {
@@ -1009,11 +1030,8 @@ class expected<void, E> {
       : has_val(false), unex(std::forward<Args>(args)...) {}
 
   template <class U, class... Args>
-  requires std::is_constructible_v < E, std::initializer_list<U>
-  &,
-      Args... >
-          constexpr explicit expected(unexpect_t /*unused*/,
-                                      std::initializer_list<U> il, Args... args)
+  requires std::is_constructible_v<E, std::initializer_list<U> &, Args...>
+  constexpr explicit expected(unexpect_t /*unused*/, std::initializer_list<U> il, Args... args)
       : has_val(false),
   unex(il, std::forward<Args>(args)...) {}
 
@@ -1027,7 +1045,8 @@ class expected<void, E> {
 
   // assignment
   constexpr auto operator=(expected const& rhs) -> expected&  // NOLINT
-      requires std::is_copy_assignable_v<E> && std::is_copy_constructible_v<E> {
+      requires std::is_copy_assignable_v<E> &&
+               std::is_copy_constructible_v<E> {
     if (has_value() && rhs.has_value()) {
     } else if (has_value()) {
       std::construct_at(std::addressof(this->unex), rhs.unex);
@@ -1041,10 +1060,11 @@ class expected<void, E> {
     return *this;
   }
 
-  constexpr auto operator=(expected&& rhs) noexcept(
-      std::is_nothrow_move_constructible_v<E>&&
-          std::is_nothrow_move_assignable_v<E>) -> expected& requires
-      std::is_move_constructible_v<E> && std::is_move_assignable_v<E> {
+  constexpr auto operator=(expected&& rhs) 
+    noexcept(std::is_nothrow_move_constructible_v<E>&&
+             std::is_nothrow_move_assignable_v<E>) -> expected& 
+    requires std::is_move_constructible_v<E> &&
+             std::is_move_assignable_v<E> {
     if (has_value() && rhs.has_value()) {
     } else if (has_value()) {
       std::construct_at(std::addressof(this->unex), std::move(rhs.unex));
@@ -1060,7 +1080,7 @@ class expected<void, E> {
 
   template <class G>
   requires std::is_constructible_v<E, G const&> and
-      std::is_assignable_v<E&, G const&>
+           std::is_assignable_v<E&, G const&>
   constexpr auto operator=(unexpected<G> const& e) -> expected& {
     if (has_value()) {
       std::construct_at(std::addressof(this->unex),
@@ -1073,7 +1093,8 @@ class expected<void, E> {
   }
 
   template <class G>
-  requires std::is_constructible_v<E, G> and std::is_assignable_v<E&, G>
+  requires std::is_constructible_v<E, G> &&
+           std::is_assignable_v<E&, G>
   constexpr auto operator=(unexpected<G>&& e) -> expected& {
     if (has_value()) {
       std::construct_at(std::addressof(this->unex), std::forward<G>(e.value()));
@@ -1093,10 +1114,12 @@ class expected<void, E> {
   }
 
   // swap
-  constexpr void swap(expected& rhs) noexcept(
-      std::is_nothrow_move_constructible_v<E>&&
-          std::is_nothrow_swappable_v<E>) requires std::is_swappable_v<E> &&
-      std::is_move_constructible_v<E> {
+  constexpr void swap(expected& rhs) 
+    noexcept(std::is_nothrow_move_constructible_v<E>&&
+             std::is_nothrow_swappable_v<E>) 
+    requires std::is_swappable_v<E> &&
+             std::is_move_constructible_v<E>
+  {
     if (rhs.has_value()) {
       if (has_value()) {
       } else {
@@ -1152,8 +1175,8 @@ class expected<void, E> {
   // monadic
   template <class F, class U = std::remove_cvref_t<std::invoke_result_t<F>>>
   requires detail::is_expected<U> &&
-      std::is_same_v<typename U::error_type, E> &&
-      std::is_copy_constructible_v<E>
+           std::is_same_v<typename U::error_type, E> &&
+           std::is_copy_constructible_v<E>
   constexpr auto and_then(F&& f) & {
     if (has_value()) {
       return std::invoke(std::forward<F>(f));
@@ -1163,8 +1186,8 @@ class expected<void, E> {
 
   template <class F, class U = std::remove_cvref_t<std::invoke_result_t<F>>>
   requires detail::is_expected<U> &&
-      std::is_same_v<typename U::error_type, E> &&
-      std::is_copy_constructible_v<E>
+           std::is_same_v<typename U::error_type, E> &&
+           std::is_copy_constructible_v<E>
   constexpr auto and_then(F&& f) const& {
     if (has_value()) {
       return std::invoke(std::forward<F>(f));
@@ -1174,8 +1197,8 @@ class expected<void, E> {
 
   template <class F, class U = std::remove_cvref_t<std::invoke_result_t<F>>>
   requires detail::is_expected<U> &&
-      std::is_same_v<typename U::error_type, E> &&
-      std::is_move_constructible_v<E>
+           std::is_same_v<typename U::error_type, E> &&
+           std::is_move_constructible_v<E>
   constexpr auto and_then(F&& f) && {
     if (has_value()) {
       return std::invoke(std::forward<F>(f));
@@ -1185,8 +1208,8 @@ class expected<void, E> {
 
   template <class F, class U = std::remove_cvref_t<std::invoke_result_t<F>>>
   requires detail::is_expected<U> &&
-      std::is_same_v<typename U::error_type, E> &&
-      std::is_move_constructible_v<E>
+           std::is_same_v<typename U::error_type, E> &&
+           std::is_move_constructible_v<E>
   constexpr auto and_then(F&& f) const&& {
     if (has_value()) {
       return std::invoke(std::forward<F>(f));
@@ -1197,8 +1220,8 @@ class expected<void, E> {
   template <class F, class V = E&,
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
   requires detail::is_expected<G> &&
-      std::is_same_v<typename G::value_type, void> &&
-      std::is_copy_constructible_v<E>
+           std::is_same_v<typename G::value_type, void> &&
+           std::is_copy_constructible_v<E>
   constexpr auto or_else(F&& f) & {
     if (has_value()) {
       return G{};
@@ -1209,8 +1232,8 @@ class expected<void, E> {
   template <class F, class V = E const&,
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
   requires detail::is_expected<G> &&
-      std::is_same_v<typename G::value_type, void> &&
-      std::is_copy_constructible_v<E>
+           std::is_same_v<typename G::value_type, void> &&
+           std::is_copy_constructible_v<E>
   constexpr auto or_else(F&& f) const& {
     if (has_value()) {
       return G{};
@@ -1221,8 +1244,8 @@ class expected<void, E> {
   template <class F, class V = E&&,
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
   requires detail::is_expected<G> &&
-      std::is_same_v<typename G::value_type, void> &&
-      std::is_move_constructible_v<E>
+           std::is_same_v<typename G::value_type, void> &&
+           std::is_move_constructible_v<E>
   constexpr auto or_else(F&& f) && {
     if (has_value()) {
       return G{};
@@ -1233,8 +1256,8 @@ class expected<void, E> {
   template <class F, class V = E const&&,
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
   requires detail::is_expected<G> &&
-      std::is_same_v<typename G::value_type, void> &&
-      std::is_move_constructible_v<E>
+           std::is_same_v<typename G::value_type, void> &&
+           std::is_move_constructible_v<E>
   constexpr auto or_else(F&& f) const&& {
     if (has_value()) {
       return G{};
@@ -1244,7 +1267,8 @@ class expected<void, E> {
 
   template <class F, class V = E&,
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
-  requires std::is_void_v<G> && std::is_copy_constructible_v<E>
+  requires std::is_void_v<G> &&
+           std::is_copy_constructible_v<E>
   constexpr auto or_else(F&& f) & {
     if (has_value()) {
       return expected(*this);
@@ -1255,7 +1279,8 @@ class expected<void, E> {
 
   template <class F, class V = E const&,
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
-  requires std::is_void_v<G> && std::is_copy_constructible_v<E>
+  requires std::is_void_v<G> &&
+           std::is_copy_constructible_v<E>
   constexpr auto or_else(F&& f) const& {
     if (has_value()) {
       return expected(*this);
@@ -1266,8 +1291,9 @@ class expected<void, E> {
 
   template <class F, class V = E&&,
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
-  requires std::is_void_v<G> && std::is_move_constructible_v<E> &&
-      std::is_copy_constructible_v<E>
+  requires std::is_void_v<G> &&
+           std::is_move_constructible_v<E> &&
+           std::is_copy_constructible_v<E>
   constexpr auto or_else(F&& f) && {
     if (has_value()) {
       return expected(std::move(*this));
@@ -1279,8 +1305,9 @@ class expected<void, E> {
 
   template <class F, class V = E const&&,
             class G = std::remove_cvref_t<std::invoke_result_t<F, V>>>
-  requires std::is_void_v<G> && std::is_move_constructible_v<E> &&
-      std::is_copy_constructible_v<E>
+  requires std::is_void_v<G> &&
+           std::is_move_constructible_v<E> &&
+           std::is_copy_constructible_v<E>
   constexpr auto or_else(F&& f) const&& {
     if (!has_value()) {
       return expected(std::move(*this));

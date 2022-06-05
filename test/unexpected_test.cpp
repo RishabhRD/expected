@@ -24,7 +24,6 @@
 
 #include <utility>
 
-#include "expected.hpp"
 #include "test_include.hpp"
 
 TEST_CASE("error constructor test") {

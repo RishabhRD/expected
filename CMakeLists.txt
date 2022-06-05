@@ -29,12 +29,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_library(project_options INTERFACE)
 target_compile_features(project_options INTERFACE cxx_std_20)
 
-add_library(project_warnings INTERFACE)
-include(cmake/CompilerWarnings.cmake)
-set_project_warnings(project_warnings)
-
-include(cmake/StaticAnalyzers.cmake)
-
 option(ENABLE_TESTING "Enable Test Builds" ON)
 option(ENABLE_EXAMPLES "Enable Example Builds" OFF)
 
