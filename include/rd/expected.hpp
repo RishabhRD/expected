@@ -232,7 +232,7 @@ class expected {
 
   constexpr expected(expected&&) noexcept(
       std::is_nothrow_move_constructible_v<T>&&
-          std::is_nothrow_move_constructible_v<T>) requires
+          std::is_nothrow_move_constructible_v<E>) requires
       std::move_constructible<T> && std::move_constructible<E> &&
       std::is_trivially_move_constructible_v<T> &&
       std::is_trivially_move_constructible_v<E>
@@ -240,7 +240,7 @@ class expected {
 
   constexpr expected(expected&& rhs) noexcept(
       std::is_nothrow_move_constructible_v<T>&&
-          std::is_nothrow_move_constructible_v<T>) requires
+          std::is_nothrow_move_constructible_v<E>) requires
       std::move_constructible<T> && std::move_constructible<E>
       : has_val(rhs.has_value()) {
     if (rhs.has_value()) {
