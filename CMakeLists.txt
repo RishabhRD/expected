@@ -31,9 +31,12 @@ target_compile_features(project_options INTERFACE cxx_std_20)
 
 option(ENABLE_TESTING "Enable Test Builds" ON)
 option(ENABLE_EXAMPLES "Enable Example Builds" OFF)
+option(ENABLE_CONAN "Build Conan package" OFF)
 
-include(cmake/Conan.cmake)
-run_conan()
+if(ENABLE_CONAN)
+  include(cmake/Conan.cmake)
+  run_conan()
+endif()
 
 if(ENABLE_TESTING)
   enable_testing()
